@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="vi">
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   TRẮC NGHIỆM THỰC TẾ VLAN ACCESS TRUNK - HaiNguyenIT Labs
+  </title>
+  <style>
+   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 20px; background-color: #f7f9fc; }
+        .quiz-container { max-width: 800px; margin: auto; background: #fff; padding: 25px 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h1 { text-align: center; color: #0056b3; }
+        .question-block { margin-bottom: 30px; border-bottom: 1px solid #eef2f7; padding-bottom: 20px; }
+        .question-text { font-weight: 600; font-size: 1.15em; margin-bottom: 15px; }
+        .options-list { list-style-type: none; padding: 0; }
+        .option { margin-bottom: 10px; padding: 12px 15px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; }
+        .option:hover:not(.answered .option) { background-color: #e9ecef; border-color: #007bff; }
+        .option.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+        .option.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; font-weight: bold; }
+        .options-list.answered .option { cursor: not-allowed; opacity: 0.8; }
+        .options-list.answered .option:not(.incorrect):not(.correct) { background-color: #f8f9fa; }
+        .explanation { margin-top: 20px; padding: 15px; background-color: #e2f3ff; border-left: 5px solid #007bff; border-radius: 4px; }
+        
+        /* <<< THAY ĐỔI MỚI: CSS cho phần tóm tắt kết quả và thời gian >>> */
+        .quiz-summary {
+            display: flex;
+            justify-content: space-between;
+            background-color: #eef2f7;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+        .final-summary {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .final-summary h2 { margin-top: 0; }
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      V&agrave;o kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div class="quiz-container">
+    <h1>
+     B&agrave;i trắc nghiệm kiến thức
+    </h1>
+    <div class="quiz-summary">
+     <span>
+      &Dstrok;iểm số:
+      <b id="score">
+       0
+      </b>
+      /
+      <b id="total-questions">
+       0
+      </b>
+     </span>
+     <span>
+      Thời gian:
+      <b id="timer">
+       00:00
+      </b>
+     </span>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      1. Một c&ocirc;ng ty mới th&agrave;nh lập ph&ograve;ng Marketing v&agrave; kỹ sư mạng cần &dstrok;ảm bảo rằng traffic của ph&ograve;ng Marketing &dstrok;ược c&aacute;ch ly ho&agrave;n to&agrave;n khỏi c&aacute;c ph&ograve;ng ban kh&aacute;c &dstrok;ể t&abreve;ng cường bảo mật v&agrave; dễ quản l&yacute;. &Dstrok;ể &dstrok;&aacute;p ứng y&ecirc;u cầu n&agrave;y một c&aacute;ch hiệu quả nhất, kỹ sư n&ecirc;n triển khai giải ph&aacute;p n&agrave;o sau &dstrok;&acirc;y?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Sử dụng một ACL extended phức tạp &dstrok;ể lọc traffic giữa &dstrok;ịa chỉ IP của ph&ograve;ng Marketing v&agrave; c&aacute;c &dstrok;ịa chỉ IP của c&aacute;c ph&ograve;ng ban kh&aacute;c tr&ecirc;n router trung t&acirc;m.
+      </li>
+      <li class="option" data-correct="true">
+       B: Tạo một VLAN mới d&agrave;nh ri&ecirc;ng cho ph&ograve;ng Marketing v&agrave; g&aacute;n tất cả c&aacute;c cổng mạng của họ v&agrave;o VLAN &dstrok;&oacute;, từ &dstrok;&oacute; tạo ra một miền quảng b&aacute; v&agrave; ph&acirc;n &dstrok;oạn logic ri&ecirc;ng biệt.
+      </li>
+      <li class="option">
+       C: Lắp &dstrok;ặt một con switch vật l&yacute; ho&agrave;n to&agrave;n ri&ecirc;ng biệt chỉ d&agrave;nh cho ph&ograve;ng Marketing v&agrave; nối n&oacute; v&agrave;o một cổng ri&ecirc;ng tr&ecirc;n router.
+      </li>
+      <li class="option">
+       D: Cấu h&igrave;nh Policy-Based Routing (PBR) tr&ecirc;n router &dstrok;ể x&aacute;c &dstrok;ịnh traffic từ MAC address của c&aacute;c m&aacute;y t&iacute;nh ph&ograve;ng Marketing v&agrave; &dstrok;iều hướng ch&uacute;ng &dstrok;i một con &dstrok;ường ri&ecirc;ng.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; VLAN l&agrave; c&ocirc;ng nghệ nền tảng &dstrok;ược thiết kế &dstrok;ặc biệt &dstrok;ể ph&acirc;n chia một mạng vật l&yacute; th&agrave;nh nhiều mạng logic ri&ecirc;ng biệt. &Dstrok;&acirc;y l&agrave; giải ph&aacute;p ph&ugrave; hợp v&agrave; c&oacute; khả n&abreve;ng mở rộng nhất cho y&ecirc;u cầu n&agrave;y.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      2. Một người d&ugrave;ng ph&agrave;n n&agrave;n rằng sau khi chuyển &dstrok;ến một b&agrave;n l&agrave;m việc mới, m&aacute;y t&iacute;nh của họ kh&ocirc;ng thể kết nối mạng. Kỹ sư kiểm tra v&agrave; thấy cổng mạng &dstrok;&oacute; trước &dstrok;&acirc;y &dstrok;ược d&ugrave;ng cho một &dstrok;iện thoại IP. Vấn &dstrok;ề c&oacute; khả n&abreve;ng nhất l&agrave; g&igrave;, li&ecirc;n quan &dstrok;ến cấu h&igrave;nh VLAN tr&ecirc;n cổng switch &dstrok;&oacute;?
+     </p>
+     <ul class="options-list">
+      <li class="option" data-correct="true">
+       A: Cổng switch c&oacute; thể &dstrok;&atilde; &dstrok;ược cấu h&igrave;nh với một Voice VLAN v&agrave; kh&ocirc;ng &dstrok;ược cấu h&igrave;nh &dstrok;&uacute;ng c&aacute;ch &dstrok;ể xử l&yacute; traffic dữ liệu (data) từ một m&aacute;y t&iacute;nh, hoặc data VLAN &dstrok;ược g&aacute;n kh&ocirc;ng ch&iacute;nh x&aacute;c.
+      </li>
+      <li class="option">
+       B: Cổng switch &dstrok;&atilde; bị t&iacute;nh n&abreve;ng Port Security v&ocirc; hiệu h&oacute;a v&igrave; n&oacute; ph&aacute;t hiện &dstrok;ịa chỉ MAC của m&aacute;y t&iacute;nh mới l&agrave; một mối &dstrok;e dọa an ninh.
+      </li>
+      <li class="option">
+       C: Giao thức Spanning Tree &dstrok;&atilde; x&aacute;c &dstrok;ịnh cổng &dstrok;&oacute; l&agrave; một cổng dự ph&ograve;ng v&agrave; &dstrok;&atilde; &dstrok;ưa n&oacute; v&agrave;o trạng th&aacute;i blocking &dstrok;ể tr&aacute;nh v&ograve;ng lặp mạng.
+      </li>
+      <li class="option">
+       D: &Dstrok;ịa chỉ IP của m&aacute;y t&iacute;nh bị xung &dstrok;ột với &dstrok;ịa chỉ IP của &dstrok;iện thoại IP &dstrok;&atilde; &dstrok;ược sử dụng trước &dstrok;&oacute;, g&acirc;y ra lỗi tr&ecirc;n switch.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       A &mdash; Một cổng &dstrok;ược cấu h&igrave;nh cho IP Phone thường c&oacute; một data VLAN (cho PC cắm sau &dstrok;iện thoại) v&agrave; một voice VLAN. Nếu chỉ c&oacute; voice VLAN hoặc data VLAN bị g&aacute;n sai, PC sẽ kh&ocirc;ng thể hoạt &dstrok;ộng.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      3. Một kỹ sư cần kết nối hai switch với nhau v&agrave; cho ph&eacute;p lưu lượng của c&aacute;c VLAN 10, 20, v&agrave; 50 &dstrok;i qua li&ecirc;n kết n&agrave;y. Anh ta phải cấu h&igrave;nh c&aacute;c cổng kết nối giữa hai switch với c&ocirc;ng nghệ n&agrave;o?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Cấu h&igrave;nh c&aacute;c cổng ở chế &dstrok;ộ access v&agrave; g&aacute;n ch&uacute;ng v&agrave;o c&ugrave;ng một VLAN &dstrok;ặc biệt &dstrok;ược tạo ra cho mục &dstrok;&iacute;ch quản l&yacute;.
+      </li>
+      <li class="option">
+       B: Thiết lập một k&ecirc;nh EtherChannel giữa hai switch &dstrok;ể gộp b&abreve;ng th&ocirc;ng v&agrave; t&abreve;ng tốc &dstrok;ộ truyền tải cho c&aacute;c VLAN.
+      </li>
+      <li class="option" data-correct="true">
+       C: Cấu h&igrave;nh c&aacute;c cổng ở chế &dstrok;ộ 802.1Q Trunk.
+      </li>
+      <li class="option">
+       D: Bật t&iacute;nh n&abreve;ng VTP tr&ecirc;n cả hai switch v&agrave; &dstrok;ặt ch&uacute;ng ở chế &dstrok;ộ server &dstrok;ể ch&uacute;ng tự &dstrok;ộng &dstrok;ồng bộ v&agrave; cho ph&eacute;p tất cả c&aacute;c VLAN &dstrok;i qua.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       C &mdash; Chế &dstrok;ộ trunk &dstrok;ược thiết kế &dstrok;ể mang lưu lượng của nhiều VLAN tr&ecirc;n một li&ecirc;n kết vật l&yacute; duy nhất. Chuẩn 802.1Q sẽ gắn thẻ cho c&aacute;c frame &dstrok;ể switch ở &dstrok;ầu nhận biết &dstrok;ược ch&uacute;ng thuộc về VLAN n&agrave;o.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      4. Một junior admin kết nối hai switch Cisco mới (với cấu h&igrave;nh mặc &dstrok;ịnh) lại với nhau bằng một sợi c&aacute;p mạng v&agrave; mong &dstrok;ợi ch&uacute;ng sẽ tự tạo th&agrave;nh một &dstrok;ường trunk. Tuy nhi&ecirc;n, li&ecirc;n kết n&agrave;y chỉ hoạt &dstrok;ộng như một cổng access. Tại sao &dstrok;ường trunk &dstrok;&atilde; kh&ocirc;ng &dstrok;ược h&igrave;nh th&agrave;nh?
+     </p>
+     <ul class="options-list">
+      <li class="option" data-correct="true">
+       A: V&igrave; cấu h&igrave;nh mặc &dstrok;ịnh của DTP tr&ecirc;n c&aacute;c d&ograve;ng switch gần &dstrok;&acirc;y l&agrave; dynamic auto, v&agrave; khi cả hai b&ecirc;n c&ugrave;ng ở chế &dstrok;ộ thụ &dstrok;ộng n&agrave;y, ch&uacute;ng sẽ kh&ocirc;ng chủ &dstrok;ộng thương lượng &dstrok;ể tạo trunk.
+      </li>
+      <li class="option">
+       B: V&igrave; VTP domain tr&ecirc;n hai switch chưa &dstrok;ược cấu h&igrave;nh, do &dstrok;&oacute; ch&uacute;ng kh&ocirc;ng thể &dstrok;ồng bộ th&ocirc;ng tin VLAN cần thiết &dstrok;ể tạo trunk.
+      </li>
+      <li class="option">
+       C: V&igrave; Spanning Tree Protocol (STP) mặc &dstrok;ịnh sẽ chặn c&aacute;c li&ecirc;n kết giữa c&aacute;c switch &dstrok;ể tr&aacute;nh v&ograve;ng lặp cho &dstrok;ến khi &dstrok;ược cấu h&igrave;nh thủ c&ocirc;ng.
+      </li>
+      <li class="option">
+       D: V&igrave; hai switch c&oacute; c&aacute;c phi&ecirc;n bản IOS kh&aacute;c nhau, g&acirc;y ra sự kh&ocirc;ng tương th&iacute;ch trong giao thức DTP v&agrave; ng&abreve;n cản việc thương lượng.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       A &mdash; Chế &dstrok;ộ auto sẽ chỉ &dstrok;ồng &yacute; trở th&agrave;nh trunk nếu ph&iacute;a &dstrok;ối t&aacute;c chủ &dstrok;ộng mời (ở chế &dstrok;ộ trunk hoặc desirable). Hai b&ecirc;n c&ugrave;ng auto sẽ dẫn &dstrok;ến một kết nối access.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      5. C&ocirc;ng ty muốn chỉ cho ph&eacute;p c&aacute;c nh&acirc;n vi&ecirc;n ph&ograve;ng Kế to&aacute;n (VLAN 30) truy cập v&agrave;o m&aacute;y chủ kế to&aacute;n (IP: 192.168.100.10, port TCP 1433) v&agrave; chặn mọi truy cập kh&aacute;c từ họ &dstrok;ến c&aacute;c m&aacute;y chủ c&ograve;n lại. Giải ph&aacute;p sử dụng ACL n&agrave;o l&agrave; ph&ugrave; hợp v&agrave; ch&iacute;nh x&aacute;c nhất?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Một ACL standard &dstrok;ặt tr&ecirc;n router, permit mạng của ph&ograve;ng Kế to&aacute;n v&agrave; deny c&aacute;c mạng kh&aacute;c.
+      </li>
+      <li class="option" data-correct="true">
+       B: Một ACL extended, permit tcp từ mạng Kế to&aacute;n &dstrok;ến IP của m&aacute;y chủ kế to&aacute;n với eq 1433, theo sau l&agrave; lệnh deny ip từ mạng Kế to&aacute;n &dstrok;ến bất kỳ &dstrok;&acirc;u, &dstrok;ược &aacute;p dụng gần nguồn.
+      </li>
+      <li class="option">
+       C: Một VACL tr&ecirc;n VLAN của c&aacute;c m&aacute;y chủ, permit &dstrok;ịa chỉ MAC của c&aacute;c m&aacute;y t&iacute;nh ph&ograve;ng Kế to&aacute;n.
+      </li>
+      <li class="option">
+       D: Một reflexive ACL tr&ecirc;n router &dstrok;ể tự &dstrok;ộng học c&aacute;c kết nối hợp lệ từ ph&ograve;ng Kế to&aacute;n v&agrave; chỉ cho ph&eacute;p traffic trả về.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; ACL extended cung cấp khả n&abreve;ng lọc chi tiết dựa tr&ecirc;n cả nguồn, &dstrok;&iacute;ch, giao thức v&agrave; cổng. &Dstrok;ặt n&oacute; gần nguồn sẽ gi&uacute;p lọc traffic kh&ocirc;ng mong muốn một c&aacute;ch hiệu quả nhất.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      6. Một ch&iacute;nh s&aacute;ch bảo mật y&ecirc;u cầu người d&ugrave;ng chỉ c&oacute; thể truy cập Internet, nhưng c&aacute;c kết nối mới từ Internet v&agrave;o mạng nội bộ phải bị chặn ho&agrave;n to&agrave;n. Từ kh&oacute;a n&agrave;o trong một ACL extended cho ph&eacute;p thực hiện &dstrok;iều n&agrave;y một c&aacute;ch hiệu quả?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Từ kh&oacute;a log, d&ugrave;ng &dstrok;ể ghi lại tất cả c&aacute;c traffic &dstrok;i ra v&agrave; tự &dstrok;ộng tạo quy tắc cho ph&eacute;p traffic trả về.
+      </li>
+      <li class="option">
+       B: Từ kh&oacute;a dynamic, d&ugrave;ng &dstrok;ể tạo ra c&aacute;c entry ACL tạm thời cho c&aacute;c kết nối hợp lệ từ b&ecirc;n trong.
+      </li>
+      <li class="option" data-correct="true">
+       C: Từ kh&oacute;a established.
+      </li>
+      <li class="option">
+       D: Từ kh&oacute;a reflexive, &dstrok;&acirc;y l&agrave; c&aacute;ch duy nhất &dstrok;ể tạo một bộ lọc trạng th&aacute;i tr&ecirc;n router.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       C &mdash; Bằng c&aacute;ch &dstrok;ặt một d&ograve;ng permit tcp any any established ở &dstrok;ầu ACL inbound, ta cho ph&eacute;p c&aacute;c g&oacute;i tin TCP trả về (c&oacute; cờ ACK/RST) của c&aacute;c phi&ecirc;n &dstrok;ược khởi tạo từ b&ecirc;n trong, trong khi vẫn chặn c&aacute;c g&oacute;i tin TCP khởi tạo phi&ecirc;n mới (c&oacute; cờ SYN) từ b&ecirc;n ngo&agrave;i.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      7. Một quản trị vi&ecirc;n muốn &dstrok;ảm bảo rằng c&aacute;c cổng d&agrave;nh cho người d&ugrave;ng sẽ kh&ocirc;ng bao giờ c&oacute; thể thương lượng &dstrok;ể trở th&agrave;nh một &dstrok;ường trunk, ngay cả khi c&oacute; người cắm nhầm một switch v&agrave;o &dstrok;&oacute;. Lệnh n&agrave;o sẽ &dstrok;ặt cổng v&agrave;o chế &dstrok;ộ access một c&aacute;ch t&itilde;nh v&agrave; v&ocirc; hiệu h&oacute;a DTP?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: switchport mode dynamic auto
+      </li>
+      <li class="option">
+       B: switchport access vlan 10
+      </li>
+      <li class="option" data-correct="true">
+       C: switchport mode access.
+      </li>
+      <li class="option">
+       D: switchport nonegotiate
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       C &mdash; Lệnh n&agrave;y sẽ cứng h&oacute;a cổng ở chế &dstrok;ộ access, l&agrave;m cho n&oacute; kh&ocirc;ng c&ograve;n khả n&abreve;ng gửi hay phản hồi c&aacute;c g&oacute;i tin DTP &dstrok;ể thương lượng th&agrave;nh trunk.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      8. Một c&ocirc;ng ty muốn ng&abreve;n chặn việc nh&acirc;n vi&ecirc;n tự &yacute; mang laptop c&aacute; nh&acirc;n v&agrave;o cắm mạng. Ch&iacute;nh s&aacute;ch y&ecirc;u cầu khi ph&aacute;t hiện một thiết bị lạ, cổng mạng phải tự &dstrok;ộng bị v&ocirc; hiệu h&oacute;a. Kỹ sư mạng n&ecirc;n sử dụng c&ocirc;ng nghệ n&agrave;o &dstrok;ể thực thi ch&iacute;nh s&aacute;ch n&agrave;y?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: DHCP Snooping với limit rate &dstrok;ược &dstrok;ặt l&agrave; 1, sẽ giới hạn mỗi cổng chỉ nhận &dstrok;ược một y&ecirc;u cầu DHCP.
+      </li>
+      <li class="option">
+       B: Spanning Tree với BPDU Guard &dstrok;ược k&iacute;ch hoạt, sẽ tắt cổng nếu ph&aacute;t hiện một switch &dstrok;ược cắm v&agrave;o.
+      </li>
+      <li class="option" data-correct="true">
+       C: Port Security với maximum 1 v&agrave; chế &dstrok;ộ vi phạm l&agrave; shutdown.
+      </li>
+      <li class="option">
+       D: Một ACL extended &dstrok;ể deny tất cả c&aacute;c &dstrok;ịa chỉ MAC ngoại trừ c&aacute;c &dstrok;ịa chỉ MAC &dstrok;&atilde; &dstrok;ược &dstrok;&abreve;ng k&yacute; trước.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       C &mdash; Cấu h&igrave;nh n&agrave;y giới hạn mỗi cổng chỉ học một &dstrok;ịa chỉ MAC duy nhất. Khi một thiết bị mới với MAC kh&aacute;c &dstrok;ược cắm v&agrave;o, cổng sẽ ngay lập tức bị &dstrok;ưa v&agrave;o trạng th&aacute;i err-disabled.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      9. Sau khi cấu h&igrave;nh một &dstrok;ường trunk, quản trị vi&ecirc;n thấy log của switch li&ecirc;n tục b&aacute;o lỗi "Native VLAN Mismatch". T&igrave;nh huống n&agrave;y c&oacute; thể g&acirc;y ra rủi ro bảo mật n&agrave;o?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: N&oacute; c&oacute; thể l&agrave;m cho VTP ngừng &dstrok;ồng bộ cơ sở dữ liệu VLAN giữa hai switch, dẫn &dstrok;ến cấu h&igrave;nh kh&ocirc;ng nhất qu&aacute;n.
+      </li>
+      <li class="option" data-correct="true">
+       B: N&oacute; c&oacute; thể cho ph&eacute;p traffic từ một VLAN n&agrave;y "nhảy" sang một VLAN kh&aacute;c, v&igrave; switch sẽ chuyển tiếp c&aacute;c frame kh&ocirc;ng &dstrok;ược gắn thẻ của Native VLAN n&agrave;y sang Native VLAN kh&aacute;c ở &dstrok;ầu kia.
+      </li>
+      <li class="option">
+       C: N&oacute; sẽ khiến cho giao thức Spanning Tree kh&ocirc;ng thể hoạt &dstrok;ộng tr&ecirc;n &dstrok;ường trunk, g&acirc;y ra nguy cơ v&ograve;ng lặp mạng.
+      </li>
+      <li class="option">
+       D: N&oacute; sẽ l&agrave;m giảm hiệu suất của &dstrok;ường trunk xuống một nửa v&igrave; c&aacute;c g&oacute;i tin phải &dstrok;ược kiểm tra v&agrave; xử l&yacute; lại nhiều lần.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; &Dstrok;&acirc;y l&agrave; một lỗ hổng bảo mật nghi&ecirc;m trọng. Kẻ tấn c&ocirc;ng c&oacute; thể lợi dụng n&oacute; &dstrok;ể gửi traffic v&agrave;o c&aacute;c VLAN m&agrave; họ kh&ocirc;ng c&oacute; quyền truy cập.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      10. Một kỹ sư muốn chặn tất cả traffic từ ph&ograve;ng Nh&acirc;n sự (VLAN 20 - 192.168.20.0/24) truy cập v&agrave;o m&aacute;y chủ t&agrave;i ch&iacute;nh (IP: 192.168.50.5), nhưng vẫn cho ph&eacute;p họ truy cập c&aacute;c t&agrave;i nguy&ecirc;n kh&aacute;c. &Dstrok;&acirc;u l&agrave; vị tr&iacute; v&agrave; loại ACL tốt nhất &dstrok;ể &aacute;p dụng?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Một ACL standard deny 192.168.20.0 0.0.0.255, &aacute;p dụng theo chiều out tr&ecirc;n interface của m&aacute;y chủ t&agrave;i ch&iacute;nh.
+      </li>
+      <li class="option" data-correct="true">
+       B: Một ACL extended, &aacute;p dụng theo chiều in tr&ecirc;n SVI của VLAN 20, với d&ograve;ng lệnh deny ip any host 192.168.50.5.
+      </li>
+      <li class="option">
+       C: Một ACL standard deny host 192.168.50.5, &aacute;p dụng theo chiều in tr&ecirc;n SVI của VLAN 20.
+      </li>
+      <li class="option">
+       D: Một VACL tr&ecirc;n VLAN 50, deny &dstrok;ịa chỉ MAC của tất cả c&aacute;c m&aacute;y t&iacute;nh trong ph&ograve;ng Nh&acirc;n sự.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; &Dstrok;ặt ACL extended gần nguồn nhất c&oacute; thể (SVI của VLAN nguồn) sẽ lọc traffic một c&aacute;ch hiệu quả nhất, tr&aacute;nh cho traffic kh&ocirc;ng mong muốn &dstrok;i s&acirc;u v&agrave;o mạng.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      11. Một quản trị vi&ecirc;n muốn cho ph&eacute;p một &dstrok;ối t&aacute;c truy cập v&agrave;o m&aacute;y chủ web của c&ocirc;ng ty trong một khoảng thời gian nhất &dstrok;ịnh v&agrave;o cuối tuần &dstrok;ể bảo tr&igrave;. &Dstrok;ể thực hiện y&ecirc;u cầu n&agrave;y một c&aacute;ch tự &dstrok;ộng, anh ta n&ecirc;n sử dụng giải ph&aacute;p n&agrave;o?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Một ACL extended th&ocirc;ng thường v&agrave; sau &dstrok;&oacute; nhớ x&oacute;a n&oacute; &dstrok;i một c&aacute;ch thủ c&ocirc;ng khi hết thời gian.
+      </li>
+      <li class="option" data-correct="true">
+       B: Một Time-based ACL, bằng c&aacute;ch tạo một time-range x&aacute;c &dstrok;ịnh khoảng thời gian cuối tuần v&agrave; &aacute;p dụng n&oacute; v&agrave;o một d&ograve;ng permit trong ACL.
+      </li>
+      <li class="option">
+       C: Một Dynamic ACL (Lock-and-Key), y&ecirc;u cầu &dstrok;ối t&aacute;c phải Telnet v&agrave;o trước &dstrok;ể k&iacute;ch hoạt quyền truy cập web.
+      </li>
+      <li class="option">
+       D: Cấu h&igrave;nh một t&agrave;i khoản người d&ugrave;ng ri&ecirc;ng cho &dstrok;ối t&aacute;c với quyền truy cập chỉ trong khoảng thời gian &dstrok;&oacute;.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; Time-based ACL &dstrok;ược thiết kế &dstrok;ặc biệt cho c&aacute;c ch&iacute;nh s&aacute;ch c&oacute; hiệu lực theo lịch, gi&uacute;p tự &dstrok;ộng h&oacute;a việc cấp v&agrave; thu hồi quyền truy cập m&agrave; kh&ocirc;ng cần sự can thiệp thủ c&ocirc;ng.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      12. Hai m&aacute;y chủ quan trọng &dstrok;ược &dstrok;ặt trong c&ugrave;ng một VLAN v&agrave; c&ugrave;ng một dải IP trong trung t&acirc;m dữ liệu. Ch&iacute;nh s&aacute;ch y&ecirc;u cầu ch&uacute;ng kh&ocirc;ng &dstrok;ược ph&eacute;p giao tiếp trực tiếp với nhau ở Layer 2 &dstrok;ể tr&aacute;nh l&acirc;y lan rủi ro. C&ocirc;ng nghệ VLAN n&agrave;o cho ph&eacute;p thực hiện việc c&ocirc; lập n&agrave;y?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: VTP (VLAN Trunking Protocol) bằng c&aacute;ch &dstrok;ặt c&aacute;c m&aacute;y chủ v&agrave;o c&aacute;c VTP domain kh&aacute;c nhau.
+      </li>
+      <li class="option">
+       B: VLAN Access Maps (VACLs) bằng c&aacute;ch tạo một access-map &dstrok;ể chặn traffic giữa hai &dstrok;ịa chỉ IP của m&aacute;y chủ.
+      </li>
+      <li class="option" data-correct="true">
+       C: Private VLANs (PVLAN).
+      </li>
+      <li class="option">
+       D: Voice VLAN, bằng c&aacute;ch cấu h&igrave;nh một m&aacute;y chủ l&agrave; data v&agrave; m&aacute;y chủ kia l&agrave; voice.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       C &mdash; Bằng c&aacute;ch &dstrok;ặt hai cổng của hai m&aacute;y chủ v&agrave;o chế &dstrok;ộ isolated trong c&ugrave;ng một private vlan, ch&uacute;ng sẽ chỉ c&oacute; thể giao tiếp với cổng promiscuous (gateway) m&agrave; kh&ocirc;ng thể giao tiếp với nhau, &dstrok;&aacute;p ứng ch&iacute;nh x&aacute;c y&ecirc;u cầu.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      13. Một kỹ sư muốn &dstrok;ảm bảo rằng chỉ c&oacute; traffic HTTP v&agrave; HTTPS từ mạng người d&ugrave;ng (10.10.10.0/24) &dstrok;ược ph&eacute;p &dstrok;i ra Internet. D&ograve;ng lệnh n&agrave;o trong một ACL extended sẽ thực hiện &dstrok;&uacute;ng y&ecirc;u cầu n&agrave;y?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: permit ip 10.10.10.0 0.0.0.255 any
+      </li>
+      <li class="option" data-correct="true">
+       B: permit tcp 10.10.10.0 0.0.0.255 any eq 80 v&agrave; permit tcp 10.10.10.0 0.0.0.255 any eq 443.
+      </li>
+      <li class="option">
+       C: permit tcp any any eq 80 v&agrave; permit tcp any any eq 443
+      </li>
+      <li class="option">
+       D: access-list 10 permit 10.10.10.0 0.0.0.255
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; Hai d&ograve;ng lệnh n&agrave;y sử dụng từ kh&oacute;a tcp v&agrave; chỉ &dstrok;ịnh ch&iacute;nh x&aacute;c c&aacute;c cổng &dstrok;&iacute;ch (eq 80 cho HTTP v&agrave; eq 443 cho HTTPS), theo sau l&agrave; một lệnh deny ip any any ẩn sẽ chặn tất cả c&aacute;c traffic kh&aacute;c.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      14. Khi một kỹ sư cấu h&igrave;nh một &dstrok;ường trunk &dstrok;ến một switch kh&ocirc;ng phải của Cisco, anh ta n&ecirc;n l&agrave;m g&igrave; &dstrok;ể &dstrok;ảm bảo kết nối ổn &dstrok;ịnh?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Bật DTP ở chế &dstrok;ộ desirable tr&ecirc;n switch Cisco &dstrok;ể n&oacute; chủ &dstrok;ộng thương lượng với thiết bị kia.
+      </li>
+      <li class="option" data-correct="true">
+       B: Cấu h&igrave;nh cổng ở chế &dstrok;ộ switchport mode trunk v&agrave; switchport nonegotiate tr&ecirc;n switch Cisco &dstrok;ể tắt ho&agrave;n to&agrave;n việc gửi c&aacute;c g&oacute;i tin DTP.
+      </li>
+      <li class="option">
+       C: Sử dụng VTP &dstrok;ể &dstrok;ồng bộ h&oacute;a cấu h&igrave;nh VLAN, v&igrave; VTP l&agrave; một chuẩn mở v&agrave; &dstrok;ược tất cả c&aacute;c h&atilde;ng hỗ trợ.
+      </li>
+      <li class="option">
+       D: &Dstrok;ể cổng ở chế &dstrok;ộ dynamic auto v&agrave; cho ph&eacute;p hai thiết bị tự &dstrok;ộng t&igrave;m ra cấu h&igrave;nh chung tốt nhất.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; V&igrave; thiết bị của h&atilde;ng kh&aacute;c kh&ocirc;ng hiểu giao thức DTP &dstrok;ộc quyền của Cisco, việc tắt DTP v&agrave; cấu h&igrave;nh trunk t&itilde;nh l&agrave; phương ph&aacute;p tốt nhất &dstrok;ể tr&aacute;nh c&aacute;c lỗi kh&ocirc;ng tương th&iacute;ch v&agrave; &dstrok;ảm bảo li&ecirc;n kết hoạt &dstrok;ộng ổn &dstrok;ịnh.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      15. Một m&aacute;y t&iacute;nh trong VLAN 20 kh&ocirc;ng thể ping &dstrok;ến gateway của n&oacute; (SVI interface Vlan20 tr&ecirc;n switch). C&aacute;c m&aacute;y t&iacute;nh kh&aacute;c trong c&ugrave;ng VLAN th&igrave; vẫn ping &dstrok;ược. Kỹ sư &dstrok;&atilde; kiểm tra IP v&agrave; c&aacute;p mạng của m&aacute;y t&iacute;nh &dstrok;&oacute; &dstrok;ều tốt. Vấn &dstrok;ề c&oacute; khả n&abreve;ng nhất l&agrave; g&igrave;?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: SVI interface Vlan20 tr&ecirc;n switch &dstrok;ang bị shutdown.
+      </li>
+      <li class="option" data-correct="true">
+       B: Cổng switch m&agrave; m&aacute;y t&iacute;nh &dstrok;&oacute; &dstrok;ang kết nối &dstrok;&atilde; bị g&aacute;n nhầm sang một VLAN kh&aacute;c (v&iacute; dụ VLAN 30).
+      </li>
+      <li class="option">
+       C: Giao thức &dstrok;ịnh tuyến tr&ecirc;n switch chưa &dstrok;ược k&iacute;ch hoạt.
+      </li>
+      <li class="option">
+       D: C&oacute; một ACL tr&ecirc;n router &dstrok;ang chặn traffic ping.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; &Dstrok;&acirc;y l&agrave; lỗi cấu h&igrave;nh cơ bản. Nếu cổng access bị g&aacute;n sai VLAN, m&aacute;y t&iacute;nh &dstrok;&oacute; sẽ bị c&ocirc; lập về mặt logic khỏi c&aacute;c thiết bị kh&aacute;c v&agrave; gateway của VLAN 20.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      16. Một c&ocirc;ng ty muốn cho ph&eacute;p kh&aacute;ch truy cập sử dụng mạng Wi-Fi (Guest VLAN 99), nhưng phải &dstrok;ảm bảo họ chỉ c&oacute; thể &dstrok;i ra Internet v&agrave; bị chặn ho&agrave;n to&agrave;n khi cố gắng truy cập bất kỳ t&agrave;i nguy&ecirc;n nội bộ n&agrave;o (v&iacute; dụ mạng 10.0.0.0/8). ACL n&agrave;o sau &dstrok;&acirc;y, &dstrok;ược &aacute;p dụng theo chiều in tr&ecirc;n SVI của Guest VLAN, sẽ thực hiện &dstrok;&uacute;ng ch&iacute;nh s&aacute;ch n&agrave;y?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: access-list GUEST_POLICY permit ip any any
+      </li>
+      <li class="option" data-correct="true">
+       B: access-list GUEST_POLICY deny ip any 10.0.0.0 0.255.255.255 v&agrave; access-list GUEST_POLICY permit ip any any.
+      </li>
+      <li class="option">
+       C: access-list GUEST_POLICY permit ip any 10.0.0.0 0.255.255.255
+      </li>
+      <li class="option">
+       D: access-list GUEST_POLICY deny ip any any, sau &dstrok;&oacute; cấu h&igrave;nh PBR &dstrok;ể &dstrok;iều hướng traffic.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; D&ograve;ng deny &dstrok;ầu ti&ecirc;n sẽ chặn mọi nỗ lực kết nối &dstrok;ến mạng nội bộ. D&ograve;ng permit thứ hai sẽ cho ph&eacute;p tất cả c&aacute;c traffic c&ograve;n lại (bao gồm cả traffic &dstrok;i ra Internet) &dstrok;i qua.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      17. Một cổng &dstrok;ược cấu h&igrave;nh switchport port-security mac-address sticky. Khi một PC kết nối v&agrave;o v&agrave; hoạt &dstrok;ộng, quản trị vi&ecirc;n lưu cấu h&igrave;nh (copy run start). &Dstrok;iều g&igrave; sẽ xảy ra nếu PC &dstrok;&oacute; &dstrok;ược r&uacute;t ra v&agrave; một PC kh&aacute;c cắm v&agrave;o?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: PC mới sẽ hoạt &dstrok;ộng b&igrave;nh thường, v&agrave; &dstrok;ịa chỉ MAC của n&oacute; sẽ &dstrok;ược học v&agrave; ghi &dstrok;&egrave; l&ecirc;n &dstrok;ịa chỉ MAC c&utilde;.
+      </li>
+      <li class="option" data-correct="true">
+       B: Cổng sẽ k&iacute;ch hoạt vi phạm Port Security v&igrave; &dstrok;ịa chỉ MAC của PC mới kh&ocirc;ng khớp với &dstrok;ịa chỉ MAC &dstrok;&atilde; &dstrok;ược học v&agrave; lưu lại như một cấu h&igrave;nh an to&agrave;n.
+      </li>
+      <li class="option">
+       C: Switch sẽ cho ph&eacute;p cả hai PC hoạt &dstrok;ộng nếu maximum &dstrok;ược &dstrok;ặt l&agrave; 2 hoặc cao hơn.
+      </li>
+      <li class="option">
+       D: Switch sẽ y&ecirc;u cầu PC mới phải x&aacute;c thực qua 802.1X trước khi cho ph&eacute;p kết nối.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; Sticky MAC biến c&aacute;c &dstrok;ịa chỉ MAC &dstrok;ược học &dstrok;ộng th&agrave;nh c&aacute;c mục cấu h&igrave;nh an to&agrave;n. Khi lưu lại, ch&uacute;ng hoạt &dstrok;ộng như c&aacute;c &dstrok;ịa chỉ MAC &dstrok;ược cấu h&igrave;nh t&itilde;nh.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      18. Một ACL extended &dstrok;ược &aacute;p dụng v&agrave;o interface vật l&yacute; GigabitEthernet0/0, nơi &dstrok;ang c&oacute; nhiều sub-interface cho c&aacute;c VLAN kh&aacute;c nhau (router-on-a-stick). ACL n&agrave;y sẽ ảnh hưởng &dstrok;ến traffic n&agrave;o?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Chỉ traffic tr&ecirc;n sub-interface &dstrok;ầu ti&ecirc;n (GigabitEthernet0/0.1).
+      </li>
+      <li class="option">
+       B: Kh&ocirc;ng c&oacute; traffic n&agrave;o, v&igrave; ACL kh&ocirc;ng thể &dstrok;ược &aacute;p dụng tr&ecirc;n interface vật l&yacute; khi c&oacute; sub-interface.
+      </li>
+      <li class="option" data-correct="true">
+       C: Tất cả traffic &dstrok;ược &dstrok;ịnh tuyến &dstrok;i qua interface vật l&yacute; &dstrok;&oacute;, bất kể n&oacute; thuộc về sub-interface hay VLAN n&agrave;o.
+      </li>
+      <li class="option">
+       D: Chỉ traffic kh&ocirc;ng &dstrok;ược gắn thẻ (untagged traffic) của Native VLAN.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       C &mdash; Việc &aacute;p dụng ACL tr&ecirc;n interface vật l&yacute; sẽ ảnh hưởng &dstrok;ến tất cả traffic &dstrok;i qua n&oacute;. &Dstrok;ể lọc traffic cho từng VLAN ri&ecirc;ng biệt, người quản trị phải &aacute;p dụng c&aacute;c ACL kh&aacute;c nhau v&agrave;o từng sub-interface tương ứng.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      19. Một c&ocirc;ng ty sử dụng VTP &dstrok;ể quản l&yacute; VLAN. Một kỹ sư mới v&ocirc; t&igrave;nh kết nối một switch mới c&oacute; VTP revision number cao hơn v&agrave; ở chế &dstrok;ộ server v&agrave;o mạng. Hậu quả c&oacute; khả n&abreve;ng nhất của h&agrave;nh &dstrok;ộng n&agrave;y l&agrave; g&igrave;?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: Switch mới sẽ tự &dstrok;ộng học v&agrave; &dstrok;ồng bộ cơ sở dữ liệu VLAN từ server hiện c&oacute; trong mạng.
+      </li>
+      <li class="option" data-correct="true">
+       B: C&oacute; thể g&acirc;y ra một cuộc "x&oacute;a sổ" to&agrave;n bộ cơ sở dữ liệu VLAN tr&ecirc;n tất cả c&aacute;c switch trong mạng nếu switch mới c&oacute; một database rỗng, dẫn &dstrok;ến mất kết nối tr&ecirc;n diện rộng.
+      </li>
+      <li class="option">
+       C: Switch mới sẽ bị &dstrok;ưa v&agrave;o trạng th&aacute;i err-disabled bởi c&aacute;c switch kh&aacute;c &dstrok;ể bảo vệ mạng.
+      </li>
+      <li class="option">
+       D: Kh&ocirc;ng c&oacute; g&igrave; xảy ra v&igrave; VTP y&ecirc;u cầu phải x&aacute;c thực mật khẩu trước khi &dstrok;ồng bộ, v&agrave; switch mới kh&ocirc;ng c&oacute; mật khẩu &dstrok;&uacute;ng.
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; &Dstrok;&acirc;y l&agrave; rủi ro lớn nhất của VTP. Một switch với revision number cao hơn sẽ &dstrok;ược coi l&agrave; nguồn th&ocirc;ng tin ch&iacute;nh x&aacute;c nhất, v&agrave; n&oacute; sẽ ghi &dstrok;&egrave; l&ecirc;n cấu h&igrave;nh VLAN của to&agrave;n bộ domain.
+      </p>
+     </div>
+    </div>
+    <div class="question-block">
+     <p class="question-text">
+      20. Một quản trị vi&ecirc;n muốn cho ph&eacute;p tất cả c&aacute;c host trong mạng 10.1.1.0/24 c&oacute; thể ping &dstrok;ến bất kỳ &dstrok;&acirc;u, nhưng muốn chặn tất cả c&aacute;c loại traffic kh&aacute;c từ mạng n&agrave;y. ACL extended n&agrave;o sau &dstrok;&acirc;y l&agrave; ch&iacute;nh x&aacute;c nhất cho y&ecirc;u cầu n&agrave;y?
+     </p>
+     <ul class="options-list">
+      <li class="option">
+       A: permit ip 10.1.1.0 0.0.0.255 any
+      </li>
+      <li class="option" data-correct="true">
+       B: permit icmp 10.1.1.0 0.0.0.255 any.
+      </li>
+      <li class="option">
+       C: permit icmp any 10.1.1.0 0.0.0.255
+      </li>
+      <li class="option">
+       D: permit tcp 10.1.1.0 0.0.0.255 any eq echo
+      </li>
+     </ul>
+     <div class="explanation" style="display: none;">
+      <p>
+       <b>
+        Giải th&iacute;ch:
+       </b>
+       B &mdash; Lựa chọn icmp sẽ chỉ cho ph&eacute;p c&aacute;c g&oacute;i tin ICMP (bao gồm cả ping) từ mạng nguồn, v&agrave; deny ẩn ở cuối sẽ chặn tất cả c&aacute;c loại traffic kh&aacute;c như TCP v&agrave; UDP.
+      </p>
+     </div>
+    </div>
+   </div>
+   <script>
+    document.addEventListener('DOMContentLoaded', function() {
+            const allQuestionBlocks = document.querySelectorAll('.question-block');
+            const totalQuestions = allQuestionBlocks.length;
+            
+            const scoreElement = document.getElementById('score');
+            const totalQuestionsElement = document.getElementById('total-questions');
+            const timerElement = document.getElementById('timer');
+            const quizContainer = document.querySelector('.quiz-container');
+
+            let score = 0;
+            let answeredQuestions = 0;
+            let timerInterval;
+            let timerStarted = false;
+
+            // Khởi tạo hiển thị ban đầu
+            totalQuestionsElement.textContent = totalQuestions;
+            scoreElement.textContent = score;
+
+            function startTimer() {
+                let startTime = new Date();
+                timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((new Date() - startTime) / 1000); // giây
+                    const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                    const seconds = (elapsed % 60).toString().padStart(2, '0');
+                    timerElement.textContent = `${minutes}:${seconds}`;
+                }, 1000);
+            }
+            
+            function checkQuizCompletion() {
+                answeredQuestions++;
+                if (answeredQuestions === totalQuestions) {
+                    clearInterval(timerInterval); // Dừng đồng hồ
+                    const finalTime = timerElement.textContent;
+                    
+                    // Hiển thị thông báo kết quả cuối cùng
+                    const finalMessage = document.createElement('div');
+                    finalMessage.className = 'final-summary';
+                    finalMessage.innerHTML = `
+                        <h2>Hoàn thành!</h2>
+                        <p>Bạn đã trả lời xong <b>${totalQuestions}</b> câu trong thời gian <b>${finalTime}</b>.</p>
+                        <p>Kết quả cuối cùng: <b>${score} / ${totalQuestions}</b> câu đúng.</p>
+                    `;
+                    quizContainer.appendChild(finalMessage);
+                }
+            }
+
+            allQuestionBlocks.forEach(questionBlock => {
+                const options = questionBlock.querySelectorAll('.option');
+                const optionList = questionBlock.querySelector('.options-list');
+
+                options.forEach(option => {
+                    option.addEventListener('click', function() {
+                        // Bắt đầu đếm giờ ở lần nhấp chuột đầu tiên
+                        if (!timerStarted) {
+                            startTimer();
+                            timerStarted = true;
+                        }
+                        
+                        // Nếu câu hỏi đã được trả lời, không làm gì cả
+                        if (optionList.classList.contains('answered')) {
+                            return;
+                        }
+                        optionList.classList.add('answered');
+
+                        const isCorrect = this.getAttribute('data-correct') === 'true';
+                        if (isCorrect) {
+                            this.classList.add('correct');
+                            score++;
+                            scoreElement.textContent = score; // Cập nhật điểm số
+                        } else {
+                            this.classList.add('incorrect');
+                            const correctOption = optionList.querySelector('.option[data-correct="true"]');
+                            if (correctOption) { correctOption.classList.add('correct'); }
+                        }
+                        
+                        const explanationDiv = questionBlock.querySelector('.explanation');
+                        if (explanationDiv) {
+                            explanationDiv.style.display = 'block';
+                        }
+                        
+                        // Kiểm tra xem đã làm hết bài chưa
+                        checkQuizCompletion();
+                    });
+                });
+            });
+        });
+   </script>
+  </main>
+ </body>
+</html>
