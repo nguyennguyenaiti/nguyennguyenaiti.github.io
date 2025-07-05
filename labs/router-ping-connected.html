@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Router to Router Ping Simulator - Corrected</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&family=Roboto:wght@400;700&display=swap');
+        :root {
+            --bg-color: #2c3e50;
+            --panel-bg: #ecf0f1;
+            --router-bg: #34495e;
+            --router-border: #2c3e50;
+            --text-light: #ecf0f1;
+            --text-dark: #2c3e50;
+            --line-color: #7f8c8d;
+            --led-power: #2ecc71;
+            --led-link: #f1c40f;
+            --packet-color: #3498db;
+            --fail-color: #e74c3c;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--panel-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+        h1 { text-align: center; }
+
+        /* Topology Area */
+        .topology {
+            position: relative;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 200px;
+            padding: 2rem 0;
+        }
+        .router-wrapper { text-align: center; }
+        .router-div {
+            width: 180px;
+            height: 80px;
+            background: var(--router-bg);
+            border: 3px solid var(--router-border);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .router-top-row { display: flex; justify-content: space-between; align-items: center; }
+        .router-name { font-weight: 700; color: var(--text-light); }
+        .leds { display: flex; gap: 5px; }
+        .led { width: 10px; height: 10px; border-radius: 50%; }
+        .led.power { background-color: var(--led-power); box-shadow: 0 0 5px var(--led-power); }
+        .led.link { background-color: #555; }
+        .led.link.blinking { animation: blink 1s infinite; }
+        @keyframes blink { 50% { background-color: var(--led-link); box-shadow: 0 0 5px var(--led-link); } }
+        
+        .ports { display: flex; gap: 4px; }
+        .port { width: 12px; height: 12px; background-color: #2c3e50; border: 1px solid #7f8c8d; border-radius: 2px; }
+        
+        .ip-display {
+            font-family: 'Fira Code', monospace;
+            font-weight: 500;
+            margin-top: 10px;
+            background-color: #fff;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .connection-line {
+            position: absolute;
+            top: 50%;
+            left: 25%;
+            width: 50%;
+            height: 5px;
+            background-color: var(--line-color);
+            z-index: -1;
+            transform: translateY(-50%);
+        }
+
+        /* Packet Animation */
+        .packet {
+            position: absolute;
+            top: 50%;
+            left: 25%;
+            width: 25px;
+            height: 25px;
+            background-color: var(--packet-color);
+            border-radius: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: all 1.5s ease-in-out;
+        }
+        .packet.fail-icon {
+            background: var(--fail-color);
+            border-radius: 5px;
+            font-size: 20px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            line-height: 25px;
+        }
+
+        /* Controls */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #dfe6e9;
+            border-radius: 8px;
+        }
+        .control-panel { text-align: center; }
+        .control-panel h3 { margin-top: 0; }
+        .control-panel input {
+            font-family: 'Fira Code', monospace;
+            width: 80%;
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .btn {
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .btn-ping { background-color: #2980b9; color: white; }
+        .btn-ping:hover { background-color: #3498db; }
+        .btn-apply { background-color: #27ae60; color: white; }
+        .btn-apply:hover { background-color: #2ecc71; }
+        .btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        
+        /* Terminal */
+        .terminal {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            font-family: 'Fira Code', monospace;
+            padding: 1rem;
+            margin-top: 2rem;
+            border-radius: 8px;
+            min-height: 150px;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+        .terminal p { margin: 0 0 5px 0; }
+        .terminal .error { color: var(--fail-color); }
+        .terminal .success { color: #2ecc71; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Router-to-Router Ping Simulation</h1>
+    <div class="topology">
+        <div class="router-wrapper">
+            <div class="router-div">
+                <div class="router-top-row">
+                    <span class="router-name">R1</span>
+                    <div class="leds"><div class="led power"></div><div id="led-r1" class="led link"></div></div>
+                </div>
+                <div class="ports"><div class="port"></div><div class="port"></div><div class="port"></div><div class="port"></div></div>
+            </div>
+            <div id="ip-r1" class="ip-display"></div>
+        </div>
+
+        <div class="connection-line"></div>
+        <div id="packet" class="packet"></div>
+        <div id="packet-reply" class="packet" style="left: 75%;"></div>
+
+        <div class="router-wrapper">
+            <div class="router-div">
+                 <div class="router-top-row">
+                    <span class="router-name">R2</span>
+                    <div class="leds"><div class="led power"></div><div id="led-r2" class="led link"></div></div>
+                </div>
+                <div class="ports"><div class="port"></div><div class="port"></div><div class="port"></div><div class="port"></div></div>
+            </div>
+            <div id="ip-r2" class="ip-display"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="control-panel">
+            <h3>Router 1</h3>
+            <p>IP: 10.0.1.1/24</p>
+            <button id="ping-btn" class="btn btn-ping">Ping R2 from R1</button>
+        </div>
+        <div class="control-panel">
+            <h3>Router 2 Configuration</h3>
+             <input type="text" id="ip-input-r2" placeholder="Enter R2 IP Address">
+            <button id="apply-btn" class="btn btn-apply">Apply Configuration</button>
+        </div>
+    </div>
+    <div class="terminal" id="terminal"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- STATE MANAGEMENT ---
+    let networkState = {
+        r1: { ip: '10.0.1.1', mask: 24 },
+        r2: { ip: '10.0.2.1', mask: 24 } // Start with a failing IP for demonstration
+    };
+
+    // --- UI ELEMENTS ---
+    const ipDisplayR1 = document.getElementById('ip-r1');
+    const ipDisplayR2 = document.getElementById('ip-r2');
+    const ipInputR2 = document.getElementById('ip-input-r2');
+    const applyBtn = document.getElementById('apply-btn');
+    const pingBtn = document.getElementById('ping-btn');
+    const terminal = document.getElementById('terminal');
+    const packet = document.getElementById('packet');
+    const packetReply = document.getElementById('packet-reply');
+    const ledR1 = document.getElementById('led-r1');
+    const ledR2 = document.getElementById('led-r2');
+
+    // --- LOGIC FUNCTIONS ---
+    function ipToNumber(ip) {
+        return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+    }
+    
+    // ** NEW FUNCTION to convert number back to IP string for clearer logs
+    function numberToIp(num) {
+        return `${(num >>> 24)}.${(num >> 16) & 255}.${(num >> 8) & 255}.${num & 255}`;
+    }
+
+    // ** REVISED getNetworkAddress for simplicity and correctness
+    function getNetworkAddress(ip, mask) {
+        const ipNum = ipToNumber(ip);
+        const maskNum = -1 << (32 - mask); // Creates correct subnet mask e.g., /24 -> 0xFFFFFF00
+        return (ipNum & maskNum) >>> 0;
+    }
+
+    function areOnSameSubnet(dev1, dev2) {
+        // For this lab, we assume the subnet mask is always the same (/24)
+        if (dev1.mask !== dev2.mask) return false; 
+        const net1 = getNetworkAddress(dev1.ip, dev1.mask);
+        const net2 = getNetworkAddress(dev2.ip, dev2.mask);
+        return net1 === net2;
+    }
+
+    function logToTerminal(message, type = '') {
+        const p = document.createElement('p');
+        if (type) p.className = type;
+        p.textContent = `> ${message}`;
+        terminal.appendChild(p);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    // --- ANIMATION & ACTIONS ---
+    function updateUI() {
+        ipDisplayR1.textContent = `${networkState.r1.ip}/${networkState.r1.mask}`;
+        ipDisplayR2.textContent = `${networkState.r2.ip}/${networkState.r2.mask}`;
+        ipInputR2.value = networkState.r2.ip;
+    }
+    
+    function setButtonsState(disabled) {
+        pingBtn.disabled = disabled;
+        applyBtn.disabled = disabled;
+    }
+    
+    async function playAnimation(element, start, end) {
+        element.style.transition = 'none';
+        element.style.left = start;
+        element.style.opacity = 1;
+        
+        await new Promise(r => setTimeout(r, 50)); // Force browser reflow
+        
+        element.style.transition = 'left 1.5s ease-in-out, opacity 0.5s ease-in-out';
+        element.style.left = end;
+        
+        await new Promise(r => setTimeout(r, 1500)); // Wait for animation to finish
+        element.style.opacity = 0;
+    }
+
+    // ** REVISED Ping Handler with corrected logic and clearer messages
+    async function handlePing() {
+        setButtonsState(true);
+        terminal.innerHTML = '';
+        logToTerminal(`Pinging ${networkState.r2.ip} from ${networkState.r1.ip}...`);
+        
+        ledR1.classList.add('blinking');
+        ledR2.classList.add('blinking');
+        
+        await new Promise(r => setTimeout(r, 500));
+
+        // ** FIX: Corrected the function call typo and now uses the proper logic
+        if (areOnSameSubnet(networkState.r1, networkState.r2)) {
+            // Success Case
+            logToTerminal(`Success! Routers are on the same subnet.`);
+            await playAnimation(packet, '25%', '75%');
+            logToTerminal(`Reply from ${networkState.r2.ip}: bytes=32 time<1ms TTL=64`);
+            await playAnimation(packetReply, '75%', '25%');
+            logToTerminal(`Reply from ${networkState.r2.ip}: bytes=32 time<1ms TTL=64`);
+            logToTerminal(`\nPing statistics for ${networkState.r2.ip}:`, 'success');
+            logToTerminal(`    Packets: Sent = 2, Received = 2, Lost = 0 (0% loss)`, 'success');
+        } else {
+            // Failure Case
+            packet.classList.add('fail-icon');
+            packet.innerHTML = '✖';
+            await playAnimation(packet, '25%', '50%'); // Animate packet to middle and stop
+
+            // ** FIX: Improved error message for clarity
+            const net1Addr = numberToIp(getNetworkAddress(networkState.r1.ip, networkState.r1.mask));
+            const net2Addr = numberToIp(getNetworkAddress(networkState.r2.ip, networkState.r2.mask));
+            
+            logToTerminal(`Ping failed: Destination Host Unreachable.`, 'error');
+            logToTerminal(`Reason: The routers are on different IP networks.`, 'error');
+            logToTerminal(`  - R1 is on network ${net1Addr}/${networkState.r1.mask}`, 'error');
+            logToTerminal(`  - R2 is on network ${net2Addr}/${networkState.r2.mask}`, 'error');
+            
+            packet.classList.remove('fail-icon');
+            packet.innerHTML = '';
+        }
+
+        ledR1.classList.remove('blinking');
+        ledR2.classList.remove('blinking');
+        setButtonsState(false);
+    }
+
+    function handleApplyConfig() {
+        const newIp = ipInputR2.value.trim();
+        // Simple regex for IP v4 format validation
+        if (/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.){3}(25[0-5]|(2[0-4]|1\d|[1-9]|)\d)$/.test(newIp)) {
+            networkState.r2.ip = newIp;
+            updateUI();
+            logToTerminal(`Configuration applied. R2 IP is now ${newIp}.`, 'success');
+        } else {
+            alert('Invalid IP address format! Please enter a valid IPv4 address.');
+        }
+    }
+
+    // --- INITIALIZE ---
+    pingBtn.addEventListener('click', handlePing);
+    applyBtn.addEventListener('click', handleApplyConfig);
+    
+    updateUI();
+    logToTerminal("Welcome! R2 is initially on a different subnet. Change R2's IP to the 10.0.1.0/24 network (e.g., 10.0.1.2) and ping again.");
+});
+</script>
+
+</body>
+</html>
