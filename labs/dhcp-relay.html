@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="vi">
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   DHCP REPLAY QUIZZ - HaiNguyenIT Labs
+  </title>
+  <style>
+   :root {
+        --device-bg: #4a4a4a; --device-border: #717171; --led-green: #2ecc71;
+        --text-light: #ecf0f1; --accent-blue: #3498db; --accent-green: #27ae60;
+        --accent-red: #e74c3c;
+    }
+    body {
+        margin: 0; height: 100vh; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; background-color: #f0f2f5;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden;
+    }
+    .main-container {
+        width: 100%; max-width: 1200px; background-color: #13140f; border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08); padding: 20px;
+    }
+    .network-diagram { position: relative; width: 100%; height: 350px; }
+    .device {
+        position: absolute; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; background-color: var(--device-bg);
+        border: 2px solid var(--device-border); box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        color: var(--text-light); transform: translate(-50%, -50%);
+        z-index: 10; border-radius: 8px;
+    }
+    .pc {
+        width: 80px; height: 100px; background-color: #34495e;
+    }
+    .pc .screen {
+        width: 70px; height: 55px; background-color: #000;
+        border: 2px solid var(--device-border); border-radius: 4px;
+        margin-bottom: 5px; display: flex; justify-content: center;
+        align-items: center; font-size: 20px; color: var(--led-green);
+    }
+    .ip-label {
+        position: absolute; font-weight: bold; color: var(--accent-blue);
+        font-size: 14px; background-color: rgba(220, 238, 255, 0.8);
+        padding: 2px 8px; border-radius: 4px; transform: translateX(-50%);
+        opacity: 0; transition: opacity 0.3s ease-in-out;
+    }
+
+    .switch { width: 200px; height: 90px; }
+    .router { width: 220px; height: 90px; }
+    .server { width: 80px; height: 160px; }
+
+    .port-panel {
+        display: flex; flex-wrap: wrap; justify-content: center;
+        gap: 6px; padding: 8px; background-color: rgba(0,0,0,0.2);
+        width: 90%; border-radius: 4px; margin-top: 10px;
+    }
+    .port {
+        width: 15px; height: 15px; border: 1px solid var(--device-border);
+        background-color: #2c3e50;
+    }
+    .router .brand { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+    .led-panel {
+        position: absolute; top: 8px; right: 10px;
+        display: flex; gap: 5px;
+    }
+    .led {
+        width: 8px; height: 8px; background-color: var(--led-green);
+        border-radius: 50%; animation: blink-animation 1.5s infinite;
+    }
+    .led:nth-child(2) { animation-delay: 0.5s; }
+    @keyframes blink-animation {
+        0%, 100% { background-color: var(--led-green); box-shadow: 0 0 5px var(--led-green); }
+        50% { background-color: #1d7342; box-shadow: none; }
+    }
+
+    .svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    .placeholder {
+        position: absolute; width: 180px; height: 40px; border: 2px dashed #95a5a6;
+        border-radius: 8px; display: flex; justify-content: center; align-items: center;
+        color: #7f8c8d; font-weight: bold; transform: translate(-50%, -50%);
+        z-index: 15; transition: all 0.2s ease;
+        padding: 0 5px;
+        box-sizing: border-box;
+    }
+    .placeholder.drag-over { border-color: var(--accent-blue); background-color: rgba(52, 152, 219, 0.1); }
+    .placeholder.filled {
+        color: white; background-color: var(--accent-blue); border-color: var(--accent-blue);
+        font-size: 13px;
+    }
+    .placeholder.error { animation: shake 0.5s; background-color: var(--accent-red); border-color: var(--accent-red); color: white; }
+    @keyframes shake {
+        0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+        25% { transform: translate(-50%, -50%) translateX(-5px); }
+        75% { transform: translate(-50%, -50%) translateX(5px); }
+    }
+
+    #step-popup {
+        position: absolute; top: 10%; left: 50%; transform: translate(-50%, -50%) scale(0.7);
+        padding: 15px 30px; background-color: rgba(0, 0, 0, 0.75); color: #FFC300;
+        border-radius: 12px; font-size: 24px; font-weight: bold; z-index: 200;
+        opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out;
+    }
+    #step-popup.show {
+        opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1);
+    }
+
+    .interactive-area { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; }
+    .tag-box { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
+    .config-tag {
+        padding: 8px 15px; background-color: #5d6d7e; color: white;
+        border-radius: 8px; font-weight: bold; cursor: grab; user-select: none;
+    }
+    .controls { display: flex; justify-content: center; gap: 15px; }
+    .button {
+        padding: 12px 25px; border: none; border-radius: 8px; color: white;
+        font-size: 16px; font-weight: bold; cursor: pointer; transition: filter 0.2s;
+    }
+    .button:hover { filter: brightness(1.1); }
+    #submit-btn { background-color: var(--accent-green); }
+    #reset-btn { background-color: #f39c12; }
+
+    .packet {
+        position: absolute; width: 20px; height: 20px; border-radius: 50%; z-index: 100;
+        box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7);
+        transition: all 1s ease-in-out;
+    }
+    .discover { background-color: #f39c12; box-shadow: 0 0 15px #f39c12; }
+    .offer { background-color: #3498db; box-shadow: 0 0 15px #3498db; }
+    .request { background-color: #e67e22; box-shadow: 0 0 15px #e67e22; }
+    .ack { background-color: #2ecc71; box-shadow: 0 0 15px #2ecc71; }
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      Kho kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div class="main-container">
+    <div class="network-diagram" id="diagram">
+     <svg class="svg-canvas" id="svg-canvas">
+     </svg>
+     <div id="step-popup">
+     </div>
+     <div class="device pc" id="pc1">
+      <div class="screen">
+       &gt;_
+      </div>
+      <span>
+       PC1
+      </span>
+     </div>
+     <div class="ip-label" id="pc1-ip-label">
+     </div>
+     <div class="device switch" id="switch1">
+      <span>
+       Switch
+      </span>
+      <div class="led-panel">
+       <div class="led">
+       </div>
+       <div class="led">
+       </div>
+      </div>
+      <div class="port-panel">
+       <div class="port">
+       </div>
+       <div class="port">
+       </div>
+       <div class="port">
+       </div>
+       <div class="port">
+       </div>
+       <div class="port">
+       </div>
+       <div class="port">
+       </div>
+       <div class="port">
+       </div>
+       <div class="port">
+       </div>
+      </div>
+     </div>
+     <div class="device router" id="router1">
+      <span class="brand">
+       Cisco 4321
+      </span>
+      <div class="led-panel">
+       <div class="led">
+       </div>
+       <div class="led">
+       </div>
+      </div>
+      <div class="port-panel">
+       <div class="port">
+       </div>
+       <div class="port">
+       </div>
+      </div>
+     </div>
+     <div class="device server" id="server1">
+      <span>
+       DHCP Server
+      </span>
+      <div class="led-panel">
+       <div class="led">
+       </div>
+       <div class="led">
+       </div>
+      </div>
+     </div>
+     <div class="placeholder" id="router-placeholder">
+      <span>
+       ...
+      </span>
+     </div>
+     <div class="placeholder" id="server-route-placeholder">
+      <span>
+       ...
+      </span>
+     </div>
+     <div class="placeholder" id="server-pool-placeholder">
+      <span>
+       ...
+      </span>
+     </div>
+    </div>
+    <div class="interactive-area">
+     <div class="tag-box">
+      <div class="config-tag" data-config="helper-address" draggable="true">
+       Cấu h&igrave;nh helper-address
+      </div>
+      <div class="config-tag" data-config="static-route" draggable="true">
+       Static route về dải PC
+      </div>
+      <div class="config-tag" data-config="dhcp-pool" draggable="true">
+       Tạo DHCP Pool
+      </div>
+      <div class="config-tag" data-config="acl" draggable="true">
+       Cấu h&igrave;nh ACL
+      </div>
+      <div class="config-tag" data-config="nat-overload" draggable="true">
+       NAT Overload
+      </div>
+     </div>
+     <div class="controls">
+      <button class="button" id="submit-btn">
+       Submit
+      </button>
+      <button class="button" id="reset-btn">
+       L&agrave;m lại
+      </button>
+     </div>
+    </div>
+   </div>
+   <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const diagram = document.getElementById('diagram');
+    const svg = document.getElementById('svg-canvas');
+    const popup = document.getElementById('step-popup');
+    const devices = {};
+    const placeholders = {};
+    ['pc1', 'switch1', 'router1', 'server1'].forEach(id => devices[id] = document.getElementById(id));
+    ['router-placeholder', 'server-route-placeholder', 'server-pool-placeholder'].forEach(id => placeholders[id] = document.getElementById(id));
+    const pc1IpLabel = document.getElementById('pc1-ip-label');
+    
+    let devicePoints = {};
+    let droppedState = { 'router-placeholder': null, 'server-route-placeholder': null, 'server-pool-placeholder': null };
+
+    function drawNetwork() {
+        const rect = diagram.getBoundingClientRect();
+        const centerY = rect.height / 2;
+        devicePoints = {
+            pc1:     { x: rect.width * 0.1, y: centerY },
+            switch1: { x: rect.width * 0.35, y: centerY },
+            router1: { x: rect.width * 0.65, y: centerY },
+            server1: { x: rect.width * 0.9, y: centerY }
+        };
+        for (const id in devices) {
+            devices[id].style.left = `${devicePoints[id].x}px`;
+            devices[id].style.top = `${devicePoints[id].y}px`;
+        }
+        
+        // --- SỬA VỊ TRÍ PLACEHOLDER THEO YÊU CẦU ---
+        const serverDevice = devices.server1;
+        const serverHeight = serverDevice.offsetHeight; // Lấy chiều cao thực tế của server
+        const placeholderHeight = placeholders['server-route-placeholder'].offsetHeight; // Lấy chiều cao của placeholder
+        const margin = 15; // Khoảng cách giữa thiết bị và placeholder
+
+        placeholders['router-placeholder'].style.left = `${devicePoints.router1.x}px`;
+        placeholders['router-placeholder'].style.top = `${devicePoints.router1.y - 80}px`;
+        
+        // Đặt placeholder (Route) ở trên đầu Server
+        placeholders['server-route-placeholder'].style.left = `${devicePoints.server1.x}px`;
+        placeholders['server-route-placeholder'].style.top = `${devicePoints.server1.y - (serverHeight / 2) - (placeholderHeight / 2) - margin}px`;
+        
+        // Đặt placeholder (Pool) ở dưới đít Server
+        placeholders['server-pool-placeholder'].style.left = `${devicePoints.server1.x}px`;
+        placeholders['server-pool-placeholder'].style.top = `${devicePoints.server1.y + (serverHeight / 2) + (placeholderHeight / 2) + margin}px`;
+
+        pc1IpLabel.style.left = `${devicePoints.pc1.x}px`;
+        pc1IpLabel.style.top = `${devicePoints.pc1.y + 65}px`;
+
+        svg.innerHTML = '';
+        const line = (p1, p2) => `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#34495e" stroke-width="3"></line>`;
+        svg.innerHTML = line(devicePoints.pc1, devicePoints.switch1) + line(devicePoints.switch1, devicePoints.router1) + line(devicePoints.router1, devicePoints.server1);
+    }
+    
+    document.querySelectorAll('.config-tag').forEach(tag => {
+        tag.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', e.target.dataset.config));
+    });
+
+    for (const id in placeholders) {
+        const p = placeholders[id];
+        p.addEventListener('dragover', e => { e.preventDefault(); p.classList.add('drag-over'); });
+        p.addEventListener('dragleave', () => p.classList.remove('drag-over'));
+        p.addEventListener('drop', e => {
+            e.preventDefault();
+            p.classList.remove('drag-over', 'error');
+            const configType = e.dataTransfer.getData('text/plain');
+            droppedState[p.id] = configType;
+            p.textContent = document.querySelector(`[data-config="${configType}"]`).textContent;
+            p.classList.add('filled');
+        });
+    }
+
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    
+    async function showPopup(message, duration = 1500) {
+        popup.textContent = message;
+        popup.classList.add('show');
+        await sleep(duration);
+        popup.classList.remove('show');
+        await sleep(300);
+    }
+
+    async function animatePacket(path, type) {
+        const packet = document.createElement('div');
+        packet.className = `packet ${type}`;
+        diagram.appendChild(packet);
+        for (let i = 0; i < path.length - 1; i++) {
+            const startNode = path[i];
+            const endNode = path[i+1];
+            packet.style.left = `${devicePoints[startNode].x - 10}px`;
+            packet.style.top = `${devicePoints[startNode].y - 10}px`;
+            await sleep(50);
+            packet.style.left = `${devicePoints[endNode].x - 10}px`;
+            packet.style.top = `${devicePoints[endNode].y - 10}px`;
+            await sleep(1000);
+        }
+        diagram.removeChild(packet);
+    }
+
+    async function runDoraAnimation() {
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('reset-btn').disabled = true;
+        
+        await showPopup('DISCOVER');
+        await animatePacket(['pc1', 'switch1', 'router1', 'server1'], 'discover');
+        
+        await showPopup('OFFER');
+        await animatePacket(['server1', 'router1', 'switch1', 'pc1'], 'offer');
+
+        await showPopup('REQUEST');
+        await animatePacket(['pc1', 'switch1', 'router1', 'server1'], 'request');
+        
+        await showPopup('ACKNOWLEDGE');
+        await animatePacket(['server1', 'router1', 'switch1', 'pc1'], 'ack');
+
+        pc1IpLabel.textContent = "192.168.1.10";
+        pc1IpLabel.style.opacity = 1;
+
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('reset-btn').disabled = false;
+    }
+
+    document.getElementById('submit-btn').addEventListener('click', () => {
+        let isCorrect = true;
+        for(const id in placeholders) placeholders[id].classList.remove('error');
+
+        if (droppedState['router-placeholder'] !== 'helper-address') {
+            placeholders['router-placeholder'].classList.add('error');
+            isCorrect = false;
+        }
+        if (droppedState['server-route-placeholder'] !== 'static-route') {
+            placeholders['server-route-placeholder'].classList.add('error');
+            isCorrect = false;
+        }
+        if (droppedState['server-pool-placeholder'] !== 'dhcp-pool') {
+            placeholders['server-pool-placeholder'].classList.add('error');
+            isCorrect = false;
+        }
+        
+        if (isCorrect) runDoraAnimation();
+    });
+
+    function reset() {
+        for (const id in droppedState) {
+            droppedState[id] = null;
+            const p = placeholders[id];
+            p.classList.remove('filled', 'error');
+            if (id === 'router-placeholder') p.textContent = '... 	';
+            if (id === 'server-route-placeholder') p.textContent = '...';
+            if (id === 'server-pool-placeholder') p.textContent = '...';
+        }
+        pc1IpLabel.textContent = "";
+        pc1IpLabel.style.opacity = 0;
+    }
+    
+    document.getElementById('reset-btn').addEventListener('click', reset);
+
+    drawNetwork();
+    window.addEventListener('resize', drawNetwork);
+});
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
+</html>
