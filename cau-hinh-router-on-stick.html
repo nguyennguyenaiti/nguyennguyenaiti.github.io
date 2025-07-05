@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="vi">
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   ROUTER ON STICK HAY LAYER3 IP - HaiNguyenIT Labs
+  </title>
+  <style>
+   :root {
+        --dark-bg: #34495e;
+        --light-bg: #f0f2f5;
+        --text-light: #ecf0f1;
+        --text-dark: #2c3e50;
+        --accent-green: #27ae60;
+        --accent-blue: #3498db;
+        --accent-red: #e74c3c;
+        --border-color: #dfe4ea;
+    }
+
+    /* --- CÀI ĐẶT TỔNG THỂ --- */
+    body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        background-color: var(--light-bg);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    /* --- BỐ CỤC CARD --- */
+    .card {
+        width: 100%;
+        max-width: 1000px;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        border: 1px solid var(--border-color);
+        margin-bottom: 25px;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    /* --- SƠ ĐỒ MẠNG --- */
+    .diagram-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .device {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--dark-bg);
+        border: 2px solid #7f8c8d;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        color: var(--text-light);
+        transform: translate(-50%, -50%);
+        z-index: 5;
+    }
+    .pc { width: 70px; height: 90px; border-radius: 8px; }
+    .pc .screen { width: 60px; height: 50px; background-color: #000; margin-bottom: 5px; display:flex; justify-content:center; align-items:center; font-size: 20px; color: var(--accent-green); }
+    .switch { width: 220px; height: 90px; border-radius: 8px; }
+    .router { width: 120px; height: 120px; border-radius: 50%; }
+
+    /* --- ĐÈN LED (MỚI) --- */
+    .led-panel {
+        position: absolute;
+        top: 10px;
+        right: 43px;
+        display: flex;
+        gap: 6px;
+    }
+    .led {
+        width: 10px;
+        height: 10px;
+        background-color: var(--accent-green);
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.1);
+        animation: blink-animation 1.8s infinite;
+    }
+    .led:nth-child(2) {
+        animation-delay: 0.6s; /* Nháy không đồng bộ */
+    }
+    @keyframes blink-animation {
+        0%   { background-color: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
+        50%  { background-color: #165a31; box-shadow: none; }
+        100% { background-color: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
+    }
+
+
+    /* Dây nối và đường chỉ dẫn */
+    .svg-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    /* VÙNG THẢ (DROP ZONE) */
+    .port-label-zone {
+        position: absolute;
+        min-width: 120px;
+        padding: 8px;
+        background-color: white;
+        border: 2px dashed #95a5a6;
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #7f8c8d;
+        font-size: 14px;
+        font-weight: bold;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        transition: all 0.2s ease;
+    }
+    .port-label-zone .placeholder {
+        color: #bdc3c7;
+        font-style: italic;
+        font-size: 12px;
+    }
+
+    .port-label-zone.drag-over {
+        border-style: solid;
+        border-color: var(--accent-blue);
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+    .port-label-zone.filled {
+        border-style: solid;
+        border-color: var(--accent-green);
+        background-color: var(--accent-green);
+        color: white;
+    }
+
+    /* KHU VỰC TƯƠNG TÁC */
+    .interactive-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+    .tag-box {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    .config-tag {
+        padding: 8px 15px;
+        background-color: var(--accent-blue);
+        color: white;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: grab;
+        user-select: none;
+        transition: transform 0.2s ease;
+    }
+    .config-tag:hover { transform: translateY(-2px); }
+    .config-tag:active { cursor: grabbing; opacity: 0.8; }
+    
+    .controls { display: flex; gap: 15px; }
+    .button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .button:hover { filter: brightness(1.1); }
+    #check-btn { background-color: var(--accent-green); }
+    #reset-btn { background-color: var(--accent-red); }
+    #feedback-message {
+        height: 25px;
+        font-size: 18px;
+        font-weight: bold;
+        transition: color 0.3s ease;
+    }
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      Kho kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <aside class="lab-sidebar">
+    <h2>
+     HaiNguyenIT Labs
+    </h2>
+    <ul>
+     <li>
+      <a href="https://hainguyenit.site">
+       Về trang chủ
+      </a>
+     </li>
+     <li>
+      <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+       Kho&aacute; học
+      </a>
+     </li>
+    </ul>
+   </aside>
+   <main class="main-lab-content">
+    <div class="card">
+     <div class="diagram-container" id="diagram">
+      <svg class="svg-canvas" id="svg-canvas">
+       <g id="connection-lines">
+       </g>
+       <g id="leader-lines">
+       </g>
+      </svg>
+      <div class="device pc" id="pc">
+       <div class="screen">
+        &gt;_
+       </div>
+       <span>
+        PC-01
+       </span>
+      </div>
+      <div class="device switch" id="switch">
+       <span>
+        cisco Switch
+       </span>
+       <div class="led-panel">
+        <div class="led">
+        </div>
+        <div class="led">
+        </div>
+       </div>
+      </div>
+      <div class="device router" id="router">
+       <span>
+        Router
+       </span>
+       <div class="led-panel">
+        <div class="led">
+        </div>
+        <div class="led">
+        </div>
+       </div>
+      </div>
+      <div class="port-label-zone" id="zone-fa0-1">
+      </div>
+      <div class="port-label-zone" id="zone-fa0-24">
+      </div>
+      <div class="port-label-zone" id="zone-fa0-0">
+      </div>
+     </div>
+    </div>
+    <div class="card">
+     <div class="interactive-area">
+      <div class="tag-box">
+       <div class="config-tag" data-tag-type="access" draggable="true">
+        access
+       </div>
+       <div class="config-tag" data-tag-type="trunk" draggable="true">
+        trunk
+       </div>
+       <div class="config-tag" data-tag-type="sub-int" draggable="true">
+        sub-int
+       </div>
+       <div class="config-tag" data-tag-type="&dstrok;ặt IP cho port vật l&iacute;" draggable="true">
+        &dstrok;ặt IP cho port vật l&iacute;
+       </div>
+      </div>
+      <div class="controls">
+       <button class="button" id="check-btn">
+        Kiểm tra
+       </button>
+       <button class="button" id="reset-btn">
+        L&agrave;m lại
+       </button>
+      </div>
+      <div id="feedback-message">
+      </div>
+     </div>
+    </div>
+    <script>
+     document.addEventListener('DOMContentLoaded', function() {
+    // ---- PHẦN THIẾT LẬP ---- //
+    const diagram = document.getElementById('diagram');
+    const connectionLinesGroup = document.getElementById('connection-lines');
+    const leaderLinesGroup = document.getElementById('leader-lines');
+    
+    const devices = {
+        pc: document.getElementById('pc'),
+        sw: document.getElementById('switch'),
+        rt: document.getElementById('router')
+    };
+    const dropZones = document.querySelectorAll('.port-label-zone');
+    const tags = document.querySelectorAll('.config-tag');
+    const checkBtn = document.getElementById('check-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const feedbackMessage = document.getElementById('feedback-message');
+
+    let dropZoneState = {
+        'zone-fa0-1': null,
+        'zone-fa0-24': null,
+        'zone-fa0-0': null
+    };
+
+    // ---- HÀM VẼ ---- //
+    function createLine(group, x1, y1, x2, y2, options = {}) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        line.setAttribute('stroke', options.color || '#555');
+        line.setAttribute('stroke-width', options.width || '3');
+        if (options.dashed) {
+            line.setAttribute('stroke-dasharray', options.dashed);
+        }
+        group.appendChild(line);
+    }
+    
+    function drawDiagram() {
+        const diagramRect = diagram.getBoundingClientRect();
+        const centerY = diagramRect.height / 2;
+
+        const devicePoints = {
+            pc: { x: diagramRect.width * 0.1, y: centerY },
+            sw: { x: diagramRect.width * 0.5, y: centerY },
+            rt: { x: diagramRect.width * 0.9, y: centerY }
+        };
+
+        for (const key in devices) {
+            devices[key].style.left = `${devicePoints[key].x}px`;
+            devices[key].style.top = `${devicePoints[key].y}px`;
+        }
+
+        connectionLinesGroup.innerHTML = '';
+        leaderLinesGroup.innerHTML = '';
+
+        // Vẽ dây nối chính
+        createLine(connectionLinesGroup, devicePoints.pc.x, devicePoints.pc.y, devicePoints.sw.x, devicePoints.sw.y);
+        createLine(connectionLinesGroup, devicePoints.sw.x, devicePoints.sw.y, devicePoints.rt.x, devicePoints.rt.y);
+
+        // Định vị vùng thả & vẽ leader lines
+        const swRect = devices.sw.getBoundingClientRect();
+        const rtRect = devices.rt.getBoundingClientRect();
+        const diagramX = diagramRect.left;
+        const diagramY = diagramRect.top;
+
+        // Zone 1: fa0/1 (Switch)
+        const zone1 = document.getElementById('zone-fa0-1');
+        const z1_pos = { x: devicePoints.sw.x - swRect.width / 2 - 80, y: centerY };
+        zone1.style.left = `${z1_pos.x}px`;
+        zone1.style.top = `${z1_pos.y}px`;
+        createLine(leaderLinesGroup, z1_pos.x, z1_pos.y, swRect.left - diagramX, centerY, { color: '#95a5a6', width: '2', dashed: '3,3'});
+
+        // Zone 2: fa0/24 (Switch)
+        const zone2 = document.getElementById('zone-fa0-24');
+        const z2_pos = { x: devicePoints.sw.x + swRect.width / 2 + 80, y: centerY - 60 };
+        zone2.style.left = `${z2_pos.x}px`;
+        zone2.style.top = `${z2_pos.y}px`;
+        createLine(leaderLinesGroup, z2_pos.x, z2_pos.y, swRect.right - diagramX, centerY, { color: '#95a5a6', width: '2', dashed: '3,3'});
+
+        // Zone 3: fa0/0 (Router)
+        const zone3 = document.getElementById('zone-fa0-0');
+        const z3_pos = { x: devicePoints.rt.x - rtRect.width / 2 - 80, y: centerY + 60 };
+        zone3.style.left = `${z3_pos.x}px`;
+        zone3.style.top = `${z3_pos.y}px`;
+        createLine(leaderLinesGroup, z3_pos.x, z3_pos.y, rtRect.left - diagramX, centerY, { color: '#95a5a6', width: '2', dashed: '3,3'});
+    }
+
+    // ---- LOGIC KÉO THẢ ---- //
+    tags.forEach(tag => {
+        tag.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', e.target.dataset.tagType));
+    });
+
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', e => {
+            e.preventDefault();
+            zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            const tagType = e.dataTransfer.getData('text/plain');
+            dropZoneState[zone.id] = tagType;
+            zone.innerHTML = `<strong>${tagType}</strong>`; // Hiển thị thẻ được thả
+            zone.classList.add('filled');
+        });
+    });
+
+    // ---- LOGIC NÚT ĐIỀU KHIỂN ---- //
+    function reset() {
+        for (const zoneId in dropZoneState) {
+            dropZoneState[zoneId] = null;
+            const zoneElement = document.getElementById(zoneId);
+            zoneElement.innerHTML = `<span class="placeholder">Thả thẻ vào đây</span>`;
+            zoneElement.classList.remove('filled');
+        }
+        feedbackMessage.textContent = '';
+    }
+
+    checkBtn.addEventListener('click', () => {
+        const { 'zone-fa0-1': fa0_1, 'zone-fa0-24': fa0_24, 'zone-fa0-0': fa0_0 } = dropZoneState;
+
+        const case1_correct = fa0_1 === 'access' && fa0_24 === 'trunk' && fa0_0 === 'sub-int';
+        const case2_correct = fa0_1 === 'access' && fa0_24 === 'access' && fa0_0 === 'đặt IP cho port vật lí';
+        
+        feedbackMessage.style.color = 'var(--accent-red)';
+        if (case1_correct) {
+            feedbackMessage.textContent = 'Chính xác! Cấu hình Router-on-a-stick rất chuẩn.';
+            feedbackMessage.style.color = 'var(--accent-green)';
+        } else if (case2_correct) {
+            feedbackMessage.textContent = 'Đúng! Đây là một cách cấu hình Layer 3 hợp lệ.';
+            feedbackMessage.style.color = 'var(--accent-green)';
+        } else if (!fa0_1 || !fa0_24 || !fa0_0) {
+            feedbackMessage.textContent = 'Vui lòng kéo đủ 3 thẻ vào 3 cổng.';
+        } else {
+            feedbackMessage.textContent = 'Chưa chính xác. Hãy kiểm tra lại logic cấu hình!';
+        }
+    });
+
+    resetBtn.addEventListener('click', reset);
+
+    // ---- KHỞI TẠO ---- //
+    reset(); // Đặt trạng thái ban đầu
+    drawDiagram();
+    window.addEventListener('resize', drawDiagram);
+});
+    </script>
+   </main>
+   <script>
+    (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
+</html>
