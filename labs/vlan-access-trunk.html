@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="vi">
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        :root {
+            --sidebar-width-desktop: 260px;
+            --sidebar-width-mobile: 220px; /* Chiều rộng mới cho di động */
+        }
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+        }
+        .sidebar {
+            width: var(--sidebar-width-desktop);
+            background: #2c3e50;
+            color: #ecf0f1;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.3s ease-in-out;
+        }
+        .sidebar-header {
+            text-align: center;
+            color: #1abc9c;
+            padding: 0 1rem 1.5rem 1rem;
+            font-size: 1.5em;
+            font-weight: 700;
+            border-bottom: 1px solid #34495e;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0 0 0;
+            flex-grow: 1;
+        }
+        .sidebar-menu li a {
+            display: block;
+            padding: 15px 30px;
+            color: #ecf0f1;
+            text-decoration: none;
+            font-size: 1.1em;
+            transition: background-color 0.3s, border-left 0.3s;
+            border-left: 5px solid transparent;
+        }
+        .sidebar-menu li a:hover {
+            background-color: #34495e;
+        }
+        .sidebar-menu li a.active {
+            background-color: #4a627a;
+            border-left: 5px solid #1abc9c;
+            font-weight: 700;
+        }
+        .course-link {
+            display: block; margin: 20px; padding: 15px; background-color: #e67e22;
+            color: white; text-align: center; border-radius: 8px; text-decoration: none;
+            font-weight: bold; transition: background-color 0.3s;
+        }
+        .course-link:hover { background-color: #d35400; }
+
+        .main-content {
+            margin-left: var(--sidebar-width-desktop);
+            padding: 2rem 3rem;
+            width: calc(100% - var(--sidebar-width-desktop));
+            transition: margin-left 0.3s ease-in-out;
+        }
+        .category-section.hidden { display: none; }
+        .category-section h3 { font-size: 1.8rem; color: #2c3e50; margin-top: 0; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .lab-list { list-style: none; padding: 0; }
+        .lab-list li { margin: 1rem 0; font-size: 1.2rem; padding: 1rem; background: #fff; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .lab-list a { text-decoration: none; color: #2980b9; font-weight: 500; }
+        .lab-list .status { font-size: 0.8rem; background: #95a5a6; color: white; padding: 3px 8px; border-radius: 10px; margin-left: 10px; cursor: not-allowed; }
+
+        .mobile-header {
+            display: none;
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 999;
+        }
+        .hamburger-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        /* Lớp phủ mờ khi mở menu trên di động */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .overlay.active {
+            display: block;
+        }
+
+        /* --- RESPONSIVE CHO DI ĐỘNG --- */
+        @media (max-width: 768px) {
+            .sidebar {
+                /* Đặt chiều rộng mới cho di động */
+                width: var(--sidebar-width-mobile);
+                /* Ẩn menu sang bên trái */
+                transform: translateX(-100%);
+                box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+            }
+            .sidebar.open {
+                transform: translateX(0); /* Hiện menu ra */
+            }
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+                padding: 6rem 1.5rem 2rem 1.5rem;
+            }
+            .mobile-header {
+                display: flex;
+            }
+        }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   K&Eacute;O THẢ TRUNK ACCESS - HaiNguyenIT Labs
+  </title>
+  <style>
+   :root {
+        --line-color: #2B2D42;
+        --device-border: #000;
+        --correct-color: #28a745;
+        --error-color: #dc3545;
+        --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+        background-color: #f0f0f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        font-family: var(--font-family);
+    }
+    .lab-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+    }
+    .network-container {
+        position: relative;
+        width: 700px;
+        height: 400px;
+        background-color: #fff;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+		right:235px
+    }
+
+    /* --- Thiết bị --- */
+    .device { position: absolute; box-sizing: border-box; z-index: 10; }
+    .switch { width: 180px; height: 50px; background-color: #343a40; border: 2px solid #000; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; justify-content: space-around; box-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+    .led-ports { display: flex; gap: 6px; }
+    .led { width: 10px; height: 10px; border-radius: 50%; background-color: #212529; border: 1px solid #495057; }
+    @keyframes blink {
+        0%, 100% { background-color: var(--correct-color); box-shadow: 0 0 5px var(--correct-color); }
+        50% { background-color: #212529; box-shadow: none; }
+    }
+    .led.blinking { animation: blink 1.5s infinite; }
+    .led.blinking.fast { animation-duration: 0.7s; }
+    .pc { width: 90px; height: 110px; }
+    .pc .monitor { width: 100%; height: 75%; background-color: #6c757d; border: 2px solid #343a40; border-radius: 8px; padding: 5px; box-sizing: border-box; }
+    .pc .monitor .screen { width: 100%; height: 100%; background-color: #000; border-radius: 2px; }
+    .pc .stand { width: 20px; height: 10%; background-color: #495057; margin: 0 auto; }
+    .pc .base { width: 50px; height: 5%; background-color: #495057; border-radius: 5px 5px 0 0; margin: 0 auto; }
+    
+    /* --- Vị trí --- */
+    #sw1 { top: 50px; left: 150px; }
+    #sw2 { top: 50px; right: 150px; }
+    #pc1 { top: 250px; left: 50px; }
+    #pc2 { top: 250px; right: 50px; }
+    
+    .line { position: absolute; background-color: var(--line-color); height: 2px; z-index: 1; transform-origin: center; }
+    #line-s1-s2 { top: 75px; left: 350px; width: 220px; transform: translate(-50%, -50%); }
+    #line-pc1-sw1 { top: 175px; left: 145px; width: 223.6px; transform: translate(-50%, -50%) rotate(116.5deg); }
+    #line-pc2-sw2 { top: 175px; right: 145px; width: 223.6px; transform: translate(50%, -50%) rotate(-116.5deg); }
+
+    .port-label-container { position: absolute; width: 60px; height: 30px; border: 2px dashed #aaa; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-weight: bold; background-color: #f8f9fa; z-index: 11; font-size: 14px; transition: background-color 0.2s; color: #555; }
+    .port-label-container.drag-over { background-color: #e2e6ea; border-color: #0d6efd; }
+    #label-sw1-pc { top: 120px; left: 155px; }
+    #label-sw1-sw2 { top: 20px; left: 245px; }
+    #label-sw2-sw1 { top: 20px; right: 245px; }
+    #label-sw2-pc { top: 120px; right: 155px; }
+    .port-label-container .mode { font-size: 12px; font-weight: bold; }
+    .port-label-container .mode.access { color: #198754; }
+    .port-label-container .mode.trunk { color: #fd7e14; }
+
+    /* --- Khu vực điều khiển --- */
+    .controls-container { display: flex; gap: 15px; align-items: center; position:relative !important; right:235px}
+    .control-item { width: 100px; height: 40px; border: 1px solid #ccc; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border-radius: 8px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 16px; background-color: #fff; user-select: none; cursor: pointer; }
+    .drag-item { cursor: grab; }
+    .drag-item:active { cursor: grabbing; }
+    .drag-item.dragging { opacity: 0.5; }
+    #check-btn { background-color: #0d6efd; color: white; border: none; }
+    #reset-btn { background-color: #6c757d; color: white; border: none; }
+    
+    #status-message { margin-top: 20px; font-size: 18px; font-weight: bold; height: 25px; text-align: center; right:235px;position:relative }
+    .correct { color: var(--correct-color); }
+    .error { color: var(--error-color); }
+    
+    /* --- Gói tin --- */
+    #packet { position: absolute; width: 15px; height: 15px; background-color: #00BFFF; border: 2px solid #fff; box-shadow: 0 0 8px #00BFFF; border-radius: 50%; z-index: 20; opacity: 0; top: 305px; left: 87.5px; }
+    .animate { animation: packet-travel 5s linear forwards; }
+    
+    /* === SỬA LỖI ANIMATION JUMP === */
+    @keyframes packet-travel {
+        0%   { top: 305px; left: 87.5px; opacity: 0; }
+        4%   { opacity: 1; }
+        /* Chặng 1: PC1 -> SW1 */
+        34%  { top: 75px; left: 190px; opacity: 1; }
+        /* Chặng 2: SW1 -> SW2 (Sửa lỗi: Chỉ dùng thuộc tính 'left') */
+        70%  { top: 75px; left: 510px; opacity: 1; }
+        /* Chặng 3: SW2 -> PC2 (Sửa lỗi: Chỉ dùng thuộc tính 'left') */
+        95%  { top: 305px; left: 612.5px; opacity: 1; }
+        /* Giữ lại ở đích rồi mờ đi */
+        100% { top: 305px; left: 612.5px; opacity: 0; }
+    }
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      Vào kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div id="lab-wrapper">
+    <main class="main-content">
+     <div class="lab-container">
+      <div class="network-container">
+       <div class="device switch" id="sw1">
+        <div class="led-ports">
+         <div class="led blinking">
+         </div>
+         <div class="led">
+         </div>
+        </div>
+        <div class="led-ports">
+         <div class="led blinking fast">
+         </div>
+         <div class="led">
+         </div>
+        </div>
+       </div>
+       <div class="device switch" id="sw2">
+        <div class="led-ports">
+         <div class="led blinking">
+         </div>
+         <div class="led">
+         </div>
+        </div>
+        <div class="led-ports">
+         <div class="led blinking fast">
+         </div>
+         <div class="led">
+         </div>
+        </div>
+       </div>
+       <div class="device pc" id="pc1">
+        <div class="monitor">
+         <div class="screen">
+         </div>
+        </div>
+        <div class="stand">
+        </div>
+        <div class="base">
+        </div>
+       </div>
+       <div class="device pc" id="pc2">
+        <div class="monitor">
+         <div class="screen">
+         </div>
+        </div>
+        <div class="stand">
+        </div>
+        <div class="base">
+        </div>
+       </div>
+       <div class="line" id="line-s1-s2">
+       </div>
+       <div class="line" id="line-pc1-sw1">
+       </div>
+       <div class="line" id="line-pc2-sw2">
+       </div>
+       <div class="port-label-container" data-correct-mode="access" id="label-sw1-pc">
+        Fa0/1
+       </div>
+       <div class="port-label-container" data-correct-mode="trunk" id="label-sw1-sw2">
+        Gi0/1
+       </div>
+       <div class="port-label-container" data-correct-mode="trunk" id="label-sw2-sw1">
+        Gi0/1
+       </div>
+       <div class="port-label-container" data-correct-mode="access" id="label-sw2-pc">
+        Fa0/2
+       </div>
+       <div id="packet">
+       </div>
+      </div>
+      <div class="controls-container">
+       <div class="control-item drag-item" data-mode="access" draggable="true">
+        Access
+       </div>
+       <div class="control-item drag-item" data-mode="trunk" draggable="true">
+        Trunk
+       </div>
+       <div class="control-item" id="check-btn">
+        Kiểm tra
+       </div>
+       <div class="control-item" id="reset-btn">
+        L&agrave;m lại
+       </div>
+      </div>
+      <div id="status-message">
+      </div>
+     </div>
+     <script>
+      document.addEventListener('DOMContentLoaded', () => {
+    const draggables = document.querySelectorAll('.drag-item');
+    const dropZones = document.querySelectorAll('.port-label-container');
+    const checkBtn = document.getElementById('check-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const statusMessage = document.getElementById('status-message');
+    const packet = document.getElementById('packet');
+
+    dropZones.forEach(zone => {
+        zone.dataset.originalText = zone.textContent;
+    });
+
+    let draggedItem = null;
+
+    draggables.forEach(draggable => {
+        draggable.addEventListener('dragstart', (e) => {
+            draggedItem = e.target;
+            setTimeout(() => e.target.classList.add('dragging'), 0);
+        });
+        draggable.addEventListener('dragend', () => {
+            draggedItem.classList.remove('dragging');
+        });
+    });
+
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => { zone.classList.remove('drag-over'); });
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            if (draggedItem) {
+                zone.dataset.droppedMode = draggedItem.dataset.mode;
+                const modeText = document.createElement('div');
+                modeText.className = 'mode ' + draggedItem.dataset.mode;
+                modeText.textContent = draggedItem.textContent;
+                zone.innerHTML = '';
+                zone.appendChild(modeText);
+            }
+        });
+    });
+
+    checkBtn.addEventListener('click', () => {
+        let allCorrect = true;
+        statusMessage.textContent = '';
+        packet.classList.remove('animate');
+
+        dropZones.forEach(zone => {
+            if (zone.dataset.correctMode !== zone.dataset.droppedMode) {
+                allCorrect = false;
+            }
+        });
+
+        if (allCorrect) {
+            statusMessage.textContent = 'Chính xác!';
+            statusMessage.className = 'correct';
+            void packet.offsetWidth;
+            packet.classList.add('animate');
+        } else {
+            statusMessage.textContent = 'Sai rồi, vui lòng cấu hình lại!';
+            statusMessage.className = 'error';
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        dropZones.forEach(zone => {
+            zone.innerHTML = zone.dataset.originalText;
+            delete zone.dataset.droppedMode;
+        });
+        statusMessage.textContent = '';
+        statusMessage.className = '';
+        packet.classList.remove('animate');
+    });
+});
+     </script>
+    </main>
+   </div>
+   <script>
+    (function() {
+                    if (window.location.protocol === 'file:') {
+                        const labWrapper = document.getElementById('lab-wrapper');
+                        if (labWrapper) { labWrapper.style.display = 'none'; }
+                        alert('LỖI: Không thể chạy bài lab này từ file offline. Vui lòng truy cập trang web gốc để thực hành.');
+                    }
+                })();
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
+</html>
