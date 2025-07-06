@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="vi">
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   Hai c&aacute;ch routing giữa c&aacute;c vlan - HaiNguyenIT Labs
+  </title>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+
+        :root {
+            --bg-color: #1e1e2e;
+            --container-bg: #282a36;
+            --text-color: #f8f8f2;
+            --comment-color: #6272a4;
+            --pink: #ff79c6;
+            --cyan: #8be9fd;
+            --green: #50fa7b;
+            --yellow: #f1fa8c;
+            --orange: #ffb86c;
+            --device-bg: #44475a;
+            --pc-green-bg: #2a9d8f; /* << MÀU XANH LÁ CÂY CHO PC */
+        }
+
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+            background-color: var(--container-bg);
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .toggle-buttons button {
+            flex: 1; padding: 10px; font-family: 'Fira Code', monospace; font-size: 1em;
+            border: none; background-color: transparent; color: var(--comment-color);
+            cursor: pointer; transition: all 0.3s ease; border-radius: 8px;
+        }
+
+        .toggle-buttons button.active {
+            background-color: var(--pink); color: var(--container-bg);
+            font-weight: 500; box-shadow: 0 0 10px var(--pink);
+        }
+
+        .simulation-window {
+            background-color: var(--container-bg);
+            border-radius: 10px; padding: 1.5rem; position: relative;
+            height: 600px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .simulation-panel { 
+            display: none;
+            width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0;
+            padding: 1.5rem; box-sizing: border-box;
+        }
+        .simulation-panel.active { display: block; }
+        
+        .device { position: absolute; text-align: center; z-index: 2; }
+        .device .label { font-size: 1.1em; font-weight: 500; }
+        .device .sub-label { font-size: 0.8em; color: var(--comment-color); }
+        
+        .device .icon {
+            margin: 0 auto 10px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .pc .icon { width: 60px; height: 50px; flex-direction: column; }
+        /* << THAY ĐỔI: Áp dụng màu xanh lá cây chỉ cho PC */
+        .pc .pc-screen { 
+            width: 100%; height: 80%; 
+            background-color: var(--pc-green-bg); 
+            border: 2px solid var(--green); 
+            border-radius: 5px 5px 0 0; 
+        }
+        .pc .pc-base { width: 40%; height: 10%; background-color: var(--green); }
+        .pc .pc-stand { width: 20%; height: 10%; background-color: var(--green); }
+
+        .switch .icon { width: 150px; height: 30px; background-color: var(--device-bg); border: 2px solid var(--yellow); border-radius: 5px; gap: 8px; padding: 0 10px; }
+        .led { width: 8px; height: 8px; background-color: #333; border-radius: 50%; animation: blink-green 1.5s infinite ease-in-out; }
+        .led:nth-child(2) { animation-delay: 0.2s; }
+        .led:nth-child(3) { animation-delay: 0.7s; }
+        .led:nth-child(4) { animation-delay: 1.1s; }
+
+        @keyframes blink-green {
+            0%, 50%, 100% { background-color: #333; box-shadow: none; }
+            25% { background-color: var(--green); box-shadow: 0 0 5px var(--green); }
+        }
+
+        .router .icon { 
+            width: 120px; 
+            height: 40px;
+            background-color: #ba4a00;
+            border: 2px solid #e59f71; 
+            border-radius: 5px;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 5px 0;
+        }
+        .router .model-name {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.7em;
+            font-weight: bold;
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.4);
+        }
+        .router .port-group { display: flex; gap: 10px; }
+        .router .port {
+            width: 12px; height: 12px;
+            background-color: #111;
+            border: 1px solid #000;
+            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Device Positions */
+        #pc10, #pc10-l3 { top: 400px; left: 100px; }
+        #pc20, #pc20-l3 { top: 400px; right: 100px; }
+        #l2-switch { top: 250px; left: 50%; transform: translateX(-50%); }
+        #router { top: 60px; left: 50%; transform: translateX(-50%); }
+        #l3-switch { top: 200px; left: 50%; transform: translateX(-50%); }
+
+        .line {
+            position: absolute; background-color: var(--comment-color);
+            z-index: 1; height: 4px;
+            transform-origin: 0 50%;
+            transition: all 0.5s ease-in-out;
+        }
+        .line.active-orange { background-color: var(--orange); box-shadow: 0 0 10px var(--orange); }
+        .line.active-cyan { background-color: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+
+        .packet { position: absolute; width: 25px; height: 25px; font-size: 1.5em; z-index: 3; opacity: 0; transition: all 1.5s ease-in-out; }
+        
+        .popup {
+            position: absolute; background-color: var(--yellow); color: var(--bg-color);
+            padding: 8px 15px; border-radius: 5px; font-size: 0.9em;
+            font-weight: 500; opacity: 0; transition: opacity 0.5s;
+            z-index: 4; text-align: center;
+        }
+        
+        .summary-popup {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8); color: var(--yellow);
+            font-weight: bold; font-size: 1.2em; padding: 2rem;
+            border-radius: 10px; border: 2px solid var(--yellow);
+            text-align: center; z-index: 50;
+            opacity: 0; transition: opacity 0.5s ease-in-out;
+            pointer-events: none;
+        }
+
+        .control-panel { text-align: center; margin-top: 1rem; }
+        .control-panel button {
+            padding: 12px 25px; font-family: 'Fira Code', monospace; font-size: 1em;
+            border: none; background-color: var(--green); color: var(--bg-color);
+            cursor: pointer; transition: all 0.3s ease; border-radius: 8px; font-weight: 500;
+        }
+        .control-panel button:hover { box-shadow: 0 0 15px var(--green); }
+        .control-panel button:disabled { background-color: var(--comment-color); cursor: not-allowed; }
+
+        @media (max-width: 600px) {
+            body { padding: 0.5rem; }
+            .simulation-window { height: 500px; padding: 1rem; }
+            #pc10, #pc10-l3 { left: 20px; }
+            #pc20, #pc20-l3 { right: 20px; }
+            .toggle-buttons button { font-size: 0.9em; }
+        }
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      V&agrave;o kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div class="main-container">
+    <div class="toggle-buttons">
+     <button class="active" id="btn-ros">
+      Router on a Stick
+     </button>
+     <button id="btn-l3">
+      Switch Layer 3
+     </button>
+    </div>
+    <div class="simulation-window">
+     <div class="simulation-panel active" id="panel-ros">
+      <div class="line" id="trunk-line">
+      </div>
+      <div class="line" id="line-pc-a">
+      </div>
+      <div class="line" id="line-pc-b">
+      </div>
+      <div class="device router" id="router">
+      </div>
+      <div class="device switch" id="l2-switch">
+      </div>
+      <div class="device pc" id="pc10">
+      </div>
+      <div class="device pc" id="pc20">
+      </div>
+      <div class="packet" id="packet-ros">
+       ✉️
+      </div>
+      <div class="popup" id="popup-ros-1">
+       Gắn Tag VLAN 10
+      </div>
+      <div class="popup" id="popup-ros-2">
+       &Dstrok;ịnh tuyến giữa VLAN
+      </div>
+      <div class="popup" id="popup-ros-re-tag" style="background-color: var(--cyan); color: var(--bg-color);">
+       &Dstrok;ổi Tag th&agrave;nh VLAN 20
+      </div>
+      <div class="popup" id="popup-ros-3">
+       Chuyển tiếp &dstrok;ến PC-B
+      </div>
+      <div class="summary-popup" id="summary-ros" style="opacity: 0;">
+       D&ugrave;ng cho mạng &iacute;t VLAN,
+       <br>
+       tiết kiệm chi ph&iacute; cổng.
+      </div>
+     </div>
+     <div class="simulation-panel" id="panel-l3">
+      <div class="line" id="line-pc-a-l3">
+      </div>
+      <div class="line" id="line-pc-b-l3">
+      </div>
+      <div class="device switch" id="l3-switch">
+      </div>
+      <div class="device pc" id="pc10-l3">
+      </div>
+      <div class="device pc" id="pc20-l3">
+      </div>
+      <div class="packet" id="packet-l3">
+       ✉️
+      </div>
+      <div class="popup" id="popup-l3-1">
+       Routing trực tiếp tr&ecirc;n SVI
+      </div>
+      <div class="summary-popup" id="summary-l3" style="opacity: 0;">
+       D&ugrave;ng khi c&oacute; nhiều VLAN,
+       <br>
+       cần hiệu n&abreve;ng cao.
+      </div>
+     </div>
+    </div>
+    <div class="control-panel">
+     <button id="btn-send-packet">
+      Gửi G&oacute;i tin
+     </button>
+    </div>
+   </div>
+   <script>
+    const btnRos = document.getElementById('btn-ros');
+        const btnL3 = document.getElementById('btn-l3');
+        const panelRos = document.getElementById('panel-ros');
+        const panelL3 = document.getElementById('panel-l3');
+        const btnSend = document.getElementById('btn-send-packet');
+        const summaryRos = document.getElementById('summary-ros');
+        const summaryL3 = document.getElementById('summary-l3');
+        let currentMode = 'ros';
+        let isAnimating = false;
+        
+        function populateDevices() {
+             document.querySelector('#router').innerHTML = `<div class="icon"><div class="port-group"><div class="port"></div><div class="port"></div></div><div class="model-name">cisco 4331</div></div><div class="label">Router</div>`;
+             document.querySelector('#l2-switch').innerHTML = `<div class="icon"><div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div></div><div class="label">Switch L2</div>`;
+             document.querySelector('#l3-switch').innerHTML = `<div class="icon"><div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div></div><div class="label">Switch L3 (SVI)</div>`;
+             document.querySelector('#pc10').innerHTML = `<div class="icon"><div class="pc-screen"></div><div class="pc-stand"></div><div class="pc-base"></div></div><div class="label">PC-A</div><div class="sub-label">VLAN 10</div>`;
+             document.querySelector('#pc20').innerHTML = `<div class="icon"><div class="pc-screen"></div><div class="pc-stand"></div><div class="pc-base"></div></div><div class="label">PC-B</div><div class="sub-label">VLAN 20</div>`;
+             document.querySelector('#pc10-l3').innerHTML = `<div class="icon"><div class="pc-screen"></div><div class="pc-stand"></div><div class="pc-base"></div></div><div class="label">PC-A</div><div class="sub-label">VLAN 10</div>`;
+             document.querySelector('#pc20-l3').innerHTML = `<div class="icon"><div class="pc-screen"></div><div class="pc-stand"></div><div class="pc-base"></div></div><div class="label">PC-B</div><div class="sub-label">VLAN 20</div>`;
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            btnRos.classList.toggle('active', mode === 'ros');
+            btnL3.classList.toggle('active', mode !== 'ros');
+            panelRos.classList.toggle('active', mode === 'ros');
+            panelL3.classList.toggle('active', mode !== 'ros');
+            drawAllLines();
+        }
+
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+        
+        function drawLine(lineEl, fromEl, toEl) {
+            if (!lineEl || !fromEl || !toEl) return;
+            const container = lineEl.offsetParent;
+            if (!container) return;
+            const containerRect = container.getBoundingClientRect();
+            const fromRect = fromEl.getBoundingClientRect();
+            const toRect = toEl.getBoundingClientRect();
+            const fromX = fromRect.left + fromRect.width / 2 - containerRect.left;
+            const fromY = fromRect.top + fromRect.height / 2 - containerRect.top;
+            const toX = toRect.left + toRect.width / 2 - containerRect.left;
+            const toY = toRect.top + toRect.height / 2 - containerRect.top;
+            const length = Math.hypot(toX - fromX, toY - fromY);
+            const angle = Math.atan2(toY - fromY, toX - fromX) * 180 / Math.PI;
+            lineEl.style.width = `${length}px`;
+            lineEl.style.height = '4px';
+            lineEl.style.left = `${fromX}px`;
+            lineEl.style.top = `${fromY - 2}px`;
+            lineEl.style.transform = `rotate(${angle}deg)`;
+        }
+
+        function drawAllLines() {
+            try {
+                 if (panelRos.offsetParent !== null) {
+                    drawLine(document.getElementById('trunk-line'), document.getElementById('router'), document.getElementById('l2-switch'));
+                    drawLine(document.getElementById('line-pc-a'), document.getElementById('pc10'), document.getElementById('l2-switch'));
+                    drawLine(document.getElementById('line-pc-b'), document.getElementById('pc20'), document.getElementById('l2-switch'));
+                }
+                if (panelL3.offsetParent !== null) {
+                    drawLine(document.getElementById('line-pc-a-l3'), document.getElementById('pc10-l3'), document.getElementById('l3-switch'));
+                    drawLine(document.getElementById('line-pc-b-l3'), document.getElementById('pc20-l3'), document.getElementById('l3-switch'));
+                }
+            } catch(e) {}
+        }
+        
+        function getCenterCoords(element) {
+            const container = element.offsetParent;
+            if (!container) return { x: 0, y: 0 };
+            const containerRect = container.getBoundingClientRect();
+            const elRect = element.getBoundingClientRect();
+            const x = elRect.left + elRect.width / 2 - containerRect.left;
+            const y = elRect.top + elRect.height / 2 - containerRect.top;
+            return { x: x - 12.5, y: y - 12.5 };
+        }
+
+        async function runRosSimulation() {
+            isAnimating = true; btnSend.disabled = true;
+            const packet = document.getElementById('packet-ros');
+            const pcA = document.getElementById('pc10');
+            const switchEl = document.getElementById('l2-switch');
+            const routerEl = document.getElementById('router');
+            const pcB = document.getElementById('pc20');
+            const popups = {
+                p1: document.getElementById('popup-ros-1'), p2: document.getElementById('popup-ros-2'),
+                p3: document.getElementById('popup-ros-3'), pReTag: document.getElementById('popup-ros-re-tag')
+            };
+            
+            document.getElementById('trunk-line').className = 'line';
+            packet.style.transition = 'none'; packet.style.opacity = 0;
+            Object.values(popups).forEach(p => p.style.opacity = 0);
+            summaryRos.style.opacity = 0;
+            
+            const startPos = getCenterCoords(pcA);
+            const switchPos = getCenterCoords(switchEl);
+            packet.style.top = `${startPos.y}px`; packet.style.left = `${startPos.x}px`;
+            await sleep(100);
+            packet.style.transition = 'all 1.5s ease-in-out';
+            packet.style.opacity = 1;
+            packet.style.top = `${switchPos.y}px`; packet.style.left = `${switchPos.x}px`;
+
+            await sleep(1500);
+            popups.p1.style.top = `${switchPos.y + 40}px`; popups.p1.style.left = 'calc(50% - 60px)';
+            popups.p1.style.opacity = 1;
+            await sleep(3000); 
+            popups.p1.style.opacity = 0;
+            document.getElementById('trunk-line').classList.add('active-orange');
+            const routerPos = getCenterCoords(routerEl);
+            packet.style.top = `${routerPos.y}px`; packet.style.left = `${routerPos.x}px`;
+            
+            await sleep(1500);
+            popups.p2.style.top = `${routerPos.y + 60}px`; popups.p2.style.left = 'calc(50% - 75px)';
+            popups.p2.style.opacity = 1;
+
+            await sleep(3000);
+            popups.p2.style.opacity = 0;
+            popups.pReTag.style.top = `${routerPos.y + 60}px`; popups.pReTag.style.left = 'calc(50% - 75px)';
+            popups.pReTag.style.opacity = 1;
+
+            await sleep(500);
+            document.getElementById('trunk-line').className = 'line active-cyan';
+            packet.style.top = `${switchPos.y}px`; packet.style.left = `${switchPos.x}px`;
+
+            await sleep(1500);
+            popups.pReTag.style.opacity = 0;
+            popups.p3.style.top = `${switchPos.y + 40}px`; popups.p3.style.left = 'calc(50% - 65px)';
+            popups.p3.style.opacity = 1;
+            await sleep(500);
+            const endPos = getCenterCoords(pcB);
+            packet.style.top = `${endPos.y}px`; packet.style.left = `${endPos.x}px`;
+
+            await sleep(3000);
+            packet.style.opacity = 0;
+            popups.p3.style.opacity = 0;
+            await sleep(500);
+            summaryRos.style.opacity = 1;
+            isAnimating = false; btnSend.disabled = false;
+        }
+
+        async function runL3Simulation() {
+            isAnimating = true; btnSend.disabled = true;
+            const packet = document.getElementById('packet-l3');
+            const popup1 = document.getElementById('popup-l3-1');
+            const pcA = document.getElementById('pc10-l3');
+            const switchEl = document.getElementById('l3-switch');
+            const pcB = document.getElementById('pc20-l3');
+            
+            packet.style.transition = 'none'; packet.style.opacity = 0;
+            popup1.style.opacity = 0;
+            summaryL3.style.opacity = 0;
+
+            const startPos = getCenterCoords(pcA);
+            const switchPos = getCenterCoords(switchEl);
+            packet.style.top = `${startPos.y}px`; packet.style.left = `${startPos.x}px`;
+            await sleep(100);
+            packet.style.transition = 'all 1.5s ease-in-out';
+            packet.style.opacity = 1;
+            packet.style.top = `${switchPos.y}px`; packet.style.left = `${switchPos.x}px`;
+
+            await sleep(1500);
+            popup1.style.top = `${switchPos.y + 60}px`;
+            popup1.style.left = 'calc(50% - 90px)';
+            popup1.style.opacity = 1;
+            
+            await sleep(3000);
+            popup1.style.opacity = 0;
+            const endPos = getCenterCoords(pcB);
+            packet.style.top = `${endPos.y}px`;
+            packet.style.left = `${endPos.x}px`;
+            
+            await sleep(1500);
+            packet.style.opacity = 0;
+            await sleep(500);
+            summaryL3.style.opacity = 1;
+            isAnimating = false; btnSend.disabled = false;
+        }
+
+        btnRos.addEventListener('click', () => switchMode('ros'));
+        btnL3.addEventListener('click', () => switchMode('l3'));
+        btnSend.addEventListener('click', () => {
+            if (isAnimating) return;
+            summaryRos.style.opacity = 0;
+            summaryL3.style.opacity = 0;
+            if (currentMode === 'ros') runRosSimulation();
+            else runL3Simulation();
+        });
+
+        window.addEventListener('load', () => {
+             populateDevices();
+             switchMode('ros');
+             drawAllLines();
+        });
+        window.addEventListener('resize', drawAllLines);
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
+</html>
