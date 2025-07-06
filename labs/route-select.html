@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="vi">
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   C&ocirc;ng cụ m&ocirc; phỏng chọn route - HaiNguyenIT Labs
+  </title>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap');
+
+        :root {
+            --bg-color: #1e1e2e;
+            --container-bg: #282a36;
+            --text-color: #f8f8f2;
+            --comment-color: #6272a4;
+            --best-match-glow: #50fa7b;
+            --eliminated-color: #ff5555;
+            --input-bg: #44475a;
+            --yellow-color: #f1fa8c;
+            --cyan-color: #8be9fd;
+            --purple-color: #bd93f9;
+            --pink-color: #ff79c6;
+        }
+
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .simulation-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--container-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        header h1 {
+            text-align: center;
+            color: var(--best-match-glow);
+            margin-top: 0;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        /* === THAY ĐỔI 1: Màu chữ label sáng hơn === */
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--cyan-color); /* Đổi màu cho dễ thấy */
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        #ip-input {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--comment-color);
+            border-radius: 5px;
+            color: var(--text-color);
+            font-family: 'Fira Code', monospace;
+            font-size: 1.1em; /* Tăng kích thước chữ input */
+            box-sizing: border-box;
+        }
+
+        .routing-table h2 {
+            color: var(--yellow-color);
+            border-bottom: 1px solid var(--comment-color);
+            padding-bottom: 10px;
+        }
+
+        .route {
+            background-color: #22242d;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid var(--comment-color);
+            transition: all 0.3s ease;
+            position: relative;
+            /* === THAY ĐỔI 2: Font trong route to và rõ hơn === */
+            font-size: 1.1em; /* Tăng cỡ chữ trong route */
+            font-weight: 500;   /* Làm chữ đậm hơn một chút */
+        }
+
+        .route.best-match {
+            border-left-color: var(--best-match-glow);
+            box-shadow: 0 0 15px var(--best-match-glow);
+            opacity: 1 !important;
+        }
+        
+        .route.eliminated {
+            opacity: 0.35;
+        }
+        
+        .route .protocol { color: var(--cyan-color); }
+        .route .prefix { color: var(--yellow-color); font-weight: 700; } /* Làm nổi bật prefix */
+        .route .ad-metric { color: var(--pink-color); }
+        .route .via { color: var(--purple-color); }
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      V&agrave;o kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div class="simulation-container">
+    <header>
+     <h1>
+      Tool M&ocirc; phỏng Chọn Route
+     </h1>
+    </header>
+    <div class="input-section">
+     <label for="ip-input">
+      # Nhập &dstrok;ịa chỉ IP &dstrok;&iacute;ch:
+     </label>
+     <input autocomplete="off" id="ip-input" spellcheck="false" type="text" value="172.16.1.0">
+    </div>
+    <div class="routing-table">
+     <h2>
+      # show ip route
+     </h2>
+     <div class="route" id="route-1">
+      <div>
+       <span class="protocol">
+        O
+       </span>
+       <span class="prefix">
+        172.16.0.0/16
+       </span>
+       <span class="ad-metric">
+        [110/20]
+       </span>
+      </div>
+      <div>
+       via
+       <span class="via">
+        10.0.0.1
+       </span>
+      </div>
+     </div>
+     <div class="route" id="route-2">
+      <div>
+       <span class="protocol">
+        D
+       </span>
+       <span class="prefix">
+        192.168.1.0/24
+       </span>
+       <span class="ad-metric">
+        [90/1540]
+       </span>
+      </div>
+      <div>
+       via
+       <span class="via">
+        10.0.0.2
+       </span>
+      </div>
+     </div>
+     <div class="route" id="route-3">
+      <div>
+       <span class="protocol">
+        O
+       </span>
+       <span class="prefix">
+        192.168.1.0/24
+       </span>
+       <span class="ad-metric">
+        [110/30]
+       </span>
+      </div>
+      <div>
+       via
+       <span class="via">
+        10.0.0.3
+       </span>
+      </div>
+     </div>
+     <div class="route" id="route-4">
+      <div>
+       <span class="protocol">
+        S*
+       </span>
+       <span class="prefix">
+        0.0.0.0/0
+       </span>
+       <span class="ad-metric">
+        [1/0]
+       </span>
+      </div>
+      <div>
+       via
+       <span class="via">
+        10.0.0.4
+       </span>
+      </div>
+     </div>
+    </div>
+   </div>
+   <script>
+    const ipInput = document.getElementById('ip-input');
+
+        const routingTableData = [
+            { id: 'route-1', prefix: '172.16.0.0', mask: 16, ad: 110, metric: 20 },
+            { id: 'route-2', prefix: '192.168.1.0', mask: 24, ad: 90, metric: 1540 },
+            { id: 'route-3', prefix: '192.168.1.0', mask: 24, ad: 110, metric: 30 },
+            { id: 'route-4', prefix: '0.0.0.0', mask: 0, ad: 1, metric: 0 }
+        ];
+
+        function ipToLong(ip) {
+            return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+        }
+        
+        function isValidIp(ip) {
+            const octets = ip.split('.');
+            if (octets.length !== 4) return false;
+            return octets.every(octet => {
+                if (!/^\d+$/.test(octet)) return false;
+                const num = parseInt(octet, 10);
+                return num >= 0 && num <= 255;
+            });
+        }
+
+        function findBestRoute(destinationIp) {
+            if (!isValidIp(destinationIp)) return null;
+            
+            const destLong = ipToLong(destinationIp);
+            
+            let matchingRoutes = routingTableData.filter(route => {
+                const prefixLong = ipToLong(route.prefix);
+                const maskLong = route.mask === 0 ? 0 : (0xFFFFFFFF << (32 - route.mask)) >>> 0;
+                return (destLong & maskLong) === (prefixLong & maskLong);
+            });
+
+            if (matchingRoutes.length === 0) return null;
+
+            const longestMask = Math.max(...matchingRoutes.map(r => r.mask));
+            let longestMatchRoutes = matchingRoutes.filter(r => r.mask === longestMask);
+            
+            if (longestMatchRoutes.length === 1) {
+                return { bestRoute: longestMatchRoutes[0], allMatches: matchingRoutes };
+            }
+
+            const lowestAd = Math.min(...longestMatchRoutes.map(r => r.ad));
+            let lowestAdRoutes = longestMatchRoutes.filter(r => r.ad === lowestAd);
+
+            if (lowestAdRoutes.length === 1) {
+                return { bestRoute: lowestAdRoutes[0], allMatches: matchingRoutes };
+            }
+            
+            const lowestMetric = Math.min(...lowestAdRoutes.map(r => r.metric));
+            let bestRoute = lowestAdRoutes.find(r => r.metric === lowestMetric);
+
+            return { bestRoute, allMatches: matchingRoutes };
+        }
+
+        function updateUI() {
+            const destinationIp = ipInput.value.trim();
+
+            routingTableData.forEach(route => {
+                document.getElementById(route.id).classList.remove('best-match', 'eliminated');
+            });
+
+            if (!isValidIp(destinationIp)) {
+                return; 
+            }
+            
+            const result = findBestRoute(destinationIp);
+            
+            if (result && result.bestRoute) {
+                const { bestRoute } = result;
+                document.getElementById(bestRoute.id).classList.add('best-match');
+
+                routingTableData.forEach(route => {
+                     if (route.id !== bestRoute.id) {
+                         document.getElementById(route.id).classList.add('eliminated');
+                     }
+                });
+            }
+        }
+
+        ipInput.addEventListener('input', updateUI);
+        window.addEventListener('load', updateUI);
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
+</html>
