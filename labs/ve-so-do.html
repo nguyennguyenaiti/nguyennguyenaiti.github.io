@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng CCNA CCNP - Chế độ Tĩnh</title>
+    <style>
+        /* CSS được đơn giản hóa */
+        body { font-family: Arial, sans-serif; padding: 0; margin: 0; height: 100vh; display: flex; flex-direction: column; }
+        #toolbox { display: flex; gap: 5px; padding: 5px; background: #f0f0f0; border-bottom: 1px solid #ccc; flex-wrap: wrap; }
+        .tool { width: 90px; height: 30px; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; cursor: grab; border-radius: 3px; user-select: none; font-size: 12px; position: relative; }
+        .tool.custom-image-tool { padding-right: 15px; width: 100px; }
+        .tool.custom-image-tool::after { content: '▼'; position: absolute; right: 5px; font-size: 10px; color: white; }
+        .custom-image-dropdown { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ccc; border-radius: 3px; box-shadow: 0 2px 3px rgba(0,0,0,0.2); z-index: 1000; min-width: 120px; }
+        body:has(#controls:last-child) .custom-image-dropdown { bottom: 100%; top: auto; box-shadow: 0 -2px 3px rgba(0,0,0,0.2); }
+        .custom-image-option { padding: 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #333; }
+        .custom-image-option:hover { background: #e0e0e0; }
+        .custom-image-option img { width: 18px; height: 18px; object-fit: contain; }
+        #workspace { width: 100%; flex-grow: 1; border: 1px solid #ccc; position: relative; overflow: auto; background-color: #e5e5e5; resize: vertical; min-height: 200px; }
+        .node-element { position: absolute; display: flex; flex-direction: column; align-items: center; cursor: move; user-select: none; z-index: 4; box-sizing: border-box; border: 1px solid #aaa; }
+        .node-element.selected { outline: 2px solid #FFC107; outline-offset: 2px; z-index: 6; }
+        .pc-type, .switch-type, .router-type, .server-type, .firewall-type { background: white; width: 80px; padding: 2px; border-radius: 3px; }
+        .icon-element { width: 60px; height: 50px; background-size: contain; background-repeat: no-repeat; background-position: center; margin-bottom: 2px; cursor: pointer; }
+        .label-display { font-size: 11px; margin-top: 2px; text-align: center; word-wrap: break-word; color: #333; font-weight: bold; width: 100%; padding: 0 2px; box-sizing: border-box; }
+        .label-input-editor { font-size: 11px; font-weight: bold; color: #333; text-align: center; width: 100%; padding: 1px; border: 1px solid #aaa; border-radius: 2px; box-sizing: border-box; margin-top: 2px; outline: none; }
+        .label-input-editor:focus { border-color: #4CAF50; box-shadow: 0 0 2px rgba(76, 175, 80, 0.5); }
+        .note-type { background: #fff9c4; width: 150px; min-height: 60px; padding: 8px; align-items: stretch;z-index: 1; border: 1px solid #ddd;}
+        .note-label-area { width: 100%; min-height: 30px; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; flex-grow: 1; border: none; resize: none; outline: none; background: transparent; padding: 2px; font-family: Arial, sans-serif; text-align: left; }
+        .note-label-area.editing { border: 1px solid #4CAF50 !important; box-shadow: 0 0 2px rgba(76, 175, 80, 0.5); }
+        .resize-handle { position: absolute; width: 8px; height: 8px; background: #4CAF50; border-top-left-radius: 8px; bottom: 0px; right: 0px; cursor: nwse-resize; z-index: 11; }
+        .custom_image-type { background: none; border: none; width: 64px !important; height: 64px !important; padding: 0; min-width: 64px; border-radius: 0; }
+        .custom_image-type img { width: 64px; height: 64px; object-fit: contain; pointer-events: none; cursor: pointer; }
+        .custom_image-type.selected { background-color: rgba(255, 235, 59, 0.2); }
+        .hidden_point-type { background-color: rgba(0,0,255,0.05); border: 1px dashed rgba(0,0,150,0.2); width:15px; height:15px; min-width:15px; border-radius:50%; padding:0; }
+        .hidden_point-type:hover { background-color: rgba(100,100,255,0.4); border-style:solid; border-color:rgba(0,0,150,0.5); }
+        .hidden_point-type.selected { background: rgba(255,235,59,0.6); border:1px solid #FFC107; outline-offset:2px;}
+        .port-label-type { background:white; border:none; width:auto; min-width:50px; height:20px; padding:2px 5px; justify-content:center;z-index: 3; }
+        .port-label-type .label-display {font-weight:bold; font-size:12px; margin-top:0;}
+        .line { position: absolute; background-color: black; transform-origin: left center; height: 2px; z-index: 2; cursor: pointer; }
+        .line.selected { background-color: red; height: 3px; z-index: 5; }
+        .line-handle { position:absolute; width:8px; height:8px; background-color:blue; border-radius:50%; transform:translate(-50%,-50%); cursor:move; z-index:3; display:none;}
+        .line.selected+.line-handle, .line.selected+.line-handle+.line-handle {display:block;}
+        #controls { display: flex; flex-wrap: wrap; gap: 5px; padding: 5px; background: #f0f0f0; border-top: 1px solid #ccc; align-items: center; }
+        .control-btn { padding:8px 12px; background:#4CAF50; color:white; border:none; border-radius:3px; cursor:pointer; font-size:12px;}
+        .control-btn:hover {opacity:0.9;}
+        .control-btn:disabled {background-color:#ccc;cursor:not-allowed;opacity:0.7;}
+        .save-load {background:#FF9800;}
+    </style>
+</head>
+<body>
+    <div id="toolbox">
+        <div class="tool" draggable="true" data-type="pc">Máy tính</div>
+        <div class="tool" draggable="true" data-type="switch">Switch</div>
+        <div class="tool" draggable="true" data-type="router">Router</div>
+        <div class="tool" draggable="true" data-type="server">Server</div>
+        <div class="tool" draggable="true" data-type="firewall">Firewall</div>
+        <div class="tool custom-image-tool" data-type="custom_image">
+            <span class="tool-label">Ảnh khác</span>
+            <div class="custom-image-dropdown"></div>
+        </div>
+        <div class="tool" draggable="true" data-type="hidden_point">Điểm ẩn</div>
+        <div class="tool" draggable="true" data-type="port-label">Nhãn cổng</div>
+        <div class="tool" draggable="true" data-type="note">Ghi chú</div>
+    </div>
+
+    <div id="workspace"></div>
+
+    <div id="controls">
+        <button id="connect-btn" class="control-btn" disabled>Kết nối</button>
+        <button id="duplicate-btn" class="control-btn" disabled>Nhân đôi</button>
+        <button id="delete-selected-btn" class="control-btn" disabled>Xóa chọn</button>
+        <button id="clear-all-btn" class="control-btn">Xóa tất</button>
+        <hr style="flex-grow: 1; border: none; margin: 0 10px;">
+        <button id="save-diagram-btn" class="control-btn save-load">Lưu sơ đồ</button>
+        <button id="load-diagram-btn" class="control-btn save-load">Tải sơ đồ</button>
+        <input type="file" id="load-diagram-input" accept=".json" style="display: none;">
+    </div>
+
+    <script>
+        // DOM Elements
+        const workspace = document.getElementById('workspace');
+        const toolbox = document.getElementById('toolbox'); 
+        const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const connectBtn = document.getElementById('connect-btn');
+        const duplicateBtn = document.getElementById('duplicate-btn');
+        const saveDiagramBtn = document.getElementById('save-diagram-btn');
+        const loadDiagramBtn = document.getElementById('load-diagram-btn');
+        const loadDiagramInput = document.getElementById('load-diagram-input');
+        const customImageTool = document.querySelector('.tool.custom-image-tool');
+        const customImageDropdown = customImageTool ? customImageTool.querySelector('.custom-image-dropdown') : null;
+        const toolLabelForCustomImage = customImageTool ? customImageTool.querySelector('.tool-label') : null;
+
+        // State Variables
+        let selectedItems = [];
+        let lines = [];
+        let deviceCounters = { pc: 0, switch: 0, router: 0, server: 0, firewall: 0, custom_image: 0, hidden_point: 0, 'port-label': 0, note: 0 };
+        const VALID_NODE_TYPES = Object.keys(deviceCounters);
+        let nextLineId = 1;
+        let isDraggingNode = false, dragItem = null, dragOffsetX, dragOffsetY, dragCorrectionY = 0;
+        let isResizing = false, resizeNode = null, resizeStartX, resizeStartY, resizeStartWidth, resizeStartHeight;
+        const ICONS_PATH = 'icons/', DEFAULT_CUSTOM_IMAGE = 'custom_image.png';
+        let selectedCustomImage = DEFAULT_CUSTOM_IMAGE;
+        let isDropdownOpen = false;
+        const sampleCustomImages = [
+            { filename: 'custom_image.png', label: 'Mặc định' }, { filename: 'custom_image1.png', label: 'Ảnh 1' },
+            { filename: 'custom_image2.png', label: 'Ảnh 2' }, { filename: 'custom_image3.png', label: 'Ảnh 3' },
+            { filename: 'custom_image4.png', label: 'Ảnh 4' }, { filename: 'custom_image5.png', label: 'Ảnh 5' },
+        ];
+
+        // --- Custom Image Dropdown Logic ---
+        function populateCustomImageDropdown() { if (!customImageDropdown) return; customImageDropdown.innerHTML = ''; sampleCustomImages.forEach(imgInfo => { const optionDiv = document.createElement('div'); optionDiv.className = 'custom-image-option'; optionDiv.dataset.image = imgInfo.filename; optionDiv.innerHTML = `<img src="${ICONS_PATH}${imgInfo.filename}" alt="${imgInfo.label}"><span>${imgInfo.label}</span>`; optionDiv.addEventListener('click', function(e) { e.stopPropagation(); selectedCustomImage = this.dataset.image; if (toolLabelForCustomImage) toolLabelForCustomImage.textContent = this.querySelector('span').textContent; toggleCustomImageDropdownInternal(false); }); customImageDropdown.appendChild(optionDiv); }); }
+        function toggleCustomImageDropdownInternal(show) { if (!customImageDropdown) return; isDropdownOpen = (typeof show === 'boolean') ? show : !isDropdownOpen; customImageDropdown.style.display = isDropdownOpen ? 'block' : 'none'; }
+        if (customImageTool && toolLabelForCustomImage && customImageDropdown) { customImageTool.setAttribute('draggable', 'true'); customImageTool.addEventListener('dragstart', function(e) { e.dataTransfer.setData('text/plain', this.dataset.type); if (this.dataset.type === 'custom_image') { e.dataTransfer.setData('imageSrc', `${ICONS_PATH}${selectedCustomImage}`); } const dragImagePreview = document.createElement('div'); dragImagePreview.textContent = toolLabelForCustomImage.textContent; dragImagePreview.style.cssText = 'position: absolute; top: -1000px; left: -1000px; background: #ddd; padding: 5px; border-radius: 3px; font-size: 12px;'; document.body.appendChild(dragImagePreview); e.dataTransfer.setDragImage(dragImagePreview, 10, 10); setTimeout(() => dragImagePreview.remove(), 0); toggleCustomImageDropdownInternal(false); }); toolLabelForCustomImage.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.custom-image-dropdown').forEach(dropdown => { if (dropdown !== customImageDropdown) dropdown.style.display = 'none'; }); toggleCustomImageDropdownInternal(); }); populateCustomImageDropdown(); }
+        document.addEventListener('click', function(e) { if (customImageTool && !customImageTool.contains(e.target) && customImageDropdown && !customImageDropdown.contains(e.target)) { if (isDropdownOpen) toggleCustomImageDropdownInternal(false); } });
+        
+        document.querySelectorAll('.tool:not(.custom-image-tool)').forEach(tool => {
+            if (tool.getAttribute('draggable') === 'true') {
+                tool.addEventListener('dragstart', (e) => {
+                    const type = e.target.dataset.type;
+                    if (!type) { console.error("Tool missing data-type:", e.target); return; }
+                    e.dataTransfer.setData('text/plain', type);
+                    const dragImagePreview = document.createElement('div');
+                    dragImagePreview.textContent = e.target.textContent ? e.target.textContent.replace('▼', '') : type;
+                    dragImagePreview.style.cssText = 'position: absolute; top: -1000px; left: -1000px; background: #ddd; padding: 5px; border-radius: 3px; font-size: 12px;';
+                    document.body.appendChild(dragImagePreview);
+                    e.dataTransfer.setDragImage(dragImagePreview, 10, 10);
+                    setTimeout(() => dragImagePreview.remove(), 0);
+                });
+            }
+        });
+        
+        // --- Workspace Drop Logic ---
+        workspace.addEventListener('dragover', (e) => e.preventDefault());
+        workspace.addEventListener('drop', (e) => { 
+            e.preventDefault(); 
+            const type = e.dataTransfer.getData('text/plain'); 
+            if (!type || !VALID_NODE_TYPES.includes(type)) { console.warn("Drop event: Invalid or missing type from dataTransfer:", type); return; } 
+            const rect = workspace.getBoundingClientRect(); 
+            let nodeWidthEstimate = 80, nodeHeightEstimate = 70; 
+            if (type === 'note') { nodeWidthEstimate = 150; nodeHeightEstimate = 60; } 
+            else if (type === 'custom_image') { nodeWidthEstimate = 64; nodeHeightEstimate = 64;} 
+            else if (type === 'hidden_point') { nodeWidthEstimate = 15; nodeHeightEstimate = 15;} 
+            else if (type === 'port-label') { nodeWidthEstimate = 50; nodeHeightEstimate = 20;} 
+            const x = e.clientX - rect.left - (nodeWidthEstimate / 2) + workspace.scrollLeft; 
+            const y = e.clientY - rect.top - (nodeHeightEstimate / 2) + workspace.scrollTop; 
+            let imageSrcForCustom = null; 
+            if (type === 'custom_image') { 
+                imageSrcForCustom = e.dataTransfer.getData('imageSrc'); 
+                if (!imageSrcForCustom || imageSrcForCustom === ICONS_PATH ) { 
+                    imageSrcForCustom = `${ICONS_PATH}${selectedCustomImage || DEFAULT_CUSTOM_IMAGE}`; 
+                } 
+            } 
+            createNodeElement(type, Math.max(0, x), Math.max(0, y), null, null, imageSrcForCustom); 
+        });
+        
+        // --- Function to handle changing node icon ---
+        function handleChangeNodeIcon(nodeElement) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(loadEvent) {
+                        const newIconDataUrl = loadEvent.target.result;
+                        const nodeType = nodeElement.dataset.type;
+
+                        if (nodeType === 'custom_image') {
+                            const imgElement = nodeElement.querySelector('img');
+                            if (imgElement) imgElement.src = newIconDataUrl;
+                        } else {
+                            const iconElement = nodeElement.querySelector('.icon-element');
+                            if (iconElement) iconElement.style.backgroundImage = `url('${newIconDataUrl}')`;
+                        }
+                        nodeElement.dataset.customIconUrl = newIconDataUrl; // Store for saving
+                    }
+                    reader.readAsDataURL(file);
+                }
+                document.body.removeChild(fileInput);
+            };
+            document.body.appendChild(fileInput);
+            fileInput.click();
+        }
+
+        function createNodeElement(type, x, y, id = null, labelText = null, imageSrc = null, savedWidth = null, savedHeight = null, customIconUrl = null) {
+            if (!VALID_NODE_TYPES.includes(type)) { console.error("createNodeElement: Invalid type received:", type); return null; }
+            const nodeCounterForType = (deviceCounters[type] = (deviceCounters[type] || 0) + 1);
+            const nodeId = id || `${type}-${nodeCounterForType}`; 
+            const defaultNodeLabel = labelText || nodeId;
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'node-element'; nodeDiv.classList.add(`${type}-type`);
+            nodeDiv.dataset.id = nodeId; nodeDiv.dataset.type = type; nodeDiv.dataset.label = defaultNodeLabel;
+            if (customIconUrl) {
+                nodeDiv.dataset.customIconUrl = customIconUrl;
+            }
+
+            nodeDiv.style.left = `${x}px`; nodeDiv.style.top = `${y}px`;
+            let labelDisplayElement;
+            if (type === 'note') {
+                nodeDiv.style.width = savedWidth || '150px'; nodeDiv.style.height = savedHeight || '60px';
+                const labelArea = document.createElement('textarea'); labelArea.className = 'note-label-area';
+                labelArea.value = defaultNodeLabel === nodeId && !labelText ? `Ghi chú ${nodeCounterForType}` : defaultNodeLabel;
+                labelArea.addEventListener('mousedown', (e) => e.stopPropagation()); nodeDiv.appendChild(labelArea);
+                labelDisplayElement = labelArea;
+                const resizeHandle = document.createElement('div'); resizeHandle.className = 'resize-handle';
+                resizeHandle.addEventListener('mousedown', onResizeHandleMouseDown); nodeDiv.appendChild(resizeHandle);
+                nodeDiv.addEventListener('dblclick', (e) => { if (e.target === nodeDiv || e.target === labelArea) editNodeLabel(nodeDiv, labelArea, 'note'); });
+            } else if (type === 'custom_image') {
+                nodeDiv.style.width = savedWidth || '64px'; nodeDiv.style.height = savedHeight || '64px';
+                const img = document.createElement('img');
+                img.src = customIconUrl || imageSrc || `${ICONS_PATH}${DEFAULT_CUSTOM_IMAGE}`;
+                img.alt = defaultNodeLabel; 
+                img.style.width = '100%'; 
+                img.style.height = '100%'; 
+                img.style.objectFit = 'contain';
+                img.style.cursor = 'pointer';
+                img.onerror = () => { console.error(`Lỗi tải ảnh: ${img.src}. Node ID: ${nodeId}`); nodeDiv.innerHTML = `<div class="label-display" style="color:red;font-size:10px;">Lỗi<br>ảnh</div>`; nodeDiv.style.cssText = 'width:64px;height:64px;border:1px dashed red; display:flex; align-items:center; justify-content:center;'; };
+                nodeDiv.appendChild(img);
+                nodeDiv.addEventListener('dblclick', function(event) {
+                    if (event.target === img || event.target === nodeDiv) { event.stopPropagation(); handleChangeNodeIcon(nodeDiv); }
+                });
+            } else if (type === 'hidden_point') { /* No content */ }
+            else if (type === 'port-label') {
+                labelDisplayElement = document.createElement('div'); labelDisplayElement.className = 'label-display';
+                labelDisplayElement.textContent = defaultNodeLabel === nodeId && !labelText ? `Port ${nodeCounterForType}` : defaultNodeLabel;
+                nodeDiv.appendChild(labelDisplayElement); nodeDiv.style.width = savedWidth || 'auto'; nodeDiv.style.height = savedHeight || '20px';
+                labelDisplayElement.addEventListener('dblclick', (e) => { e.stopPropagation(); editNodeLabel(nodeDiv, labelDisplayElement, type); });
+            } else { // Standard nodes
+                const iconDivElement = document.createElement('div'); 
+                iconDivElement.className = 'icon-element';
+                if (customIconUrl) {
+                    iconDivElement.style.backgroundImage = `url('${customIconUrl}')`;
+                } else {
+                    iconDivElement.style.backgroundImage = `url('${ICONS_PATH}${type}.png')`;
+                }
+                nodeDiv.appendChild(iconDivElement);
+                iconDivElement.addEventListener('dblclick', function(event) {
+                    event.stopPropagation();
+                    handleChangeNodeIcon(nodeDiv);
+                });
+
+                labelDisplayElement = document.createElement('div'); 
+                labelDisplayElement.className = 'label-display';
+                labelDisplayElement.textContent = defaultNodeLabel;
+                nodeDiv.appendChild(labelDisplayElement);
+                labelDisplayElement.addEventListener('dblclick', (e) => { e.stopPropagation(); editNodeLabel(nodeDiv, labelDisplayElement, type); });
+            }
+            nodeDiv.addEventListener('mousedown', onNodeMouseDown);
+            workspace.appendChild(nodeDiv);
+            updateControlButtonsState();
+            return nodeDiv;
+        }
+        function editNodeLabel(nodeDiv, labelDisplayElement, nodeType) { const oldLabel = nodeDiv.dataset.label; let input; if (nodeType === 'note') { input = labelDisplayElement; input.classList.add('editing'); input.disabled = false; input.focus(); input.select(); } else { input = document.createElement('input'); input.type = 'text'; input.className = 'label-input-editor'; input.value = oldLabel; labelDisplayElement.style.display = 'none'; nodeDiv.appendChild(input); input.focus(); input.select(); } function saveLabel() { let newLabel = input.value.trim(); if (!newLabel && nodeType !== 'note' && nodeType !== 'port-label') newLabel = nodeDiv.dataset.id; else if (!newLabel && (nodeType === 'note' || nodeType === 'port-label')) newLabel = oldLabel; nodeDiv.dataset.label = newLabel; if (nodeType === 'note') { input.value = newLabel; input.classList.remove('editing'); } else { labelDisplayElement.textContent = newLabel; labelDisplayElement.style.display = ''; input.remove(); } cleanup(); } function cancelLabelEdit() { if (nodeType === 'note') { input.value = oldLabel; input.classList.remove('editing'); } else { labelDisplayElement.style.display = ''; input.remove(); } cleanup(); } function cleanup(){ input.removeEventListener('blur', saveLabelOnBlur); input.removeEventListener('keydown', handleLabelKeydown); } let blurTimeout; function saveLabelOnBlur() { clearTimeout(blurTimeout); blurTimeout = setTimeout(saveLabel, 100); } function handleLabelKeydown(e) { clearTimeout(blurTimeout); if (e.key === 'Enter') { if (nodeType === 'note' && e.shiftKey) return; e.preventDefault(); saveLabel(); } else if (e.key === 'Escape') { e.preventDefault(); cancelLabelEdit(); } } input.addEventListener('blur', saveLabelOnBlur); input.addEventListener('keydown', handleLabelKeydown); if(nodeType !== 'note') input.addEventListener('mousedown', e => e.stopPropagation()); }
+        function onNodeMouseDown(e) { const target = e.target; if (e.button !== 0 || target.classList.contains('resize-handle') || target.tagName === 'TEXTAREA' || target.classList.contains('label-input-editor') || (target.closest && target.closest('.label-input-editor'))) return; e.preventDefault(); const clickedItem = this; isDraggingNode = true; dragItem = clickedItem; if (!e.ctrlKey && !e.metaKey) { if (!selectedItems.includes(clickedItem)) { clearSelection(); selectItem(clickedItem); } } else { toggleSelectItem(clickedItem); } if (!selectedItems.includes(dragItem) && selectedItems.length > 0) isDraggingNode = selectedItems.includes(dragItem); if (!isDraggingNode) return; dragCorrectionY = 0; if (dragItem.dataset.type === 'note' && selectedItems.includes(dragItem)) { const allNotesInWorkspace = Array.from(workspace.querySelectorAll('.node-element.note-type')); allNotesInWorkspace.forEach(note => { if (note !== dragItem && note.offsetTop < dragItem.offsetTop) { const hp = Math.abs((note.offsetLeft + note.offsetWidth / 2) - (dragItem.offsetLeft + dragItem.offsetWidth / 2)); if (hp < Math.max(note.offsetWidth, dragItem.offsetWidth)) dragCorrectionY += note.offsetHeight; } }); } requestAnimationFrame(() => { if (!isDraggingNode || !dragItem) return; const wsR = workspace.getBoundingClientRect(); const mX = e.pageX-(wsR.left+window.scrollX)+workspace.scrollLeft; const mY = e.pageY-(wsR.top+window.scrollY)+workspace.scrollTop; dragOffsetX = mX - dragItem.offsetLeft; dragOffsetY = mY - dragItem.offsetTop; selectedItems.forEach(item => { if (item.classList.contains('node-element')) { item.dataset.startX = String(item.offsetLeft); item.dataset.startY = String(item.offsetTop); } }); }); document.addEventListener('mousemove', onNodeMouseMove); document.addEventListener('mouseup', onNodeMouseUp); }
+        function onNodeMouseMove(e) { if (!isDraggingNode || !dragItem) return; e.preventDefault(); const wsR = workspace.getBoundingClientRect(); const mX = e.pageX-(wsR.left+window.scrollX)+workspace.scrollLeft; const mY = e.pageY-(wsR.top+window.scrollY)+workspace.scrollTop; const iSX = parseFloat(dragItem.dataset.startX); const iSY = parseFloat(dragItem.dataset.startY); const iNX = mX - dragOffsetX; const iNY = mY - dragOffsetY; const dX = iNX - iSX; const dY = iNY - iSY; selectedItems.forEach(item => { if (!item.classList.contains('node-element')) return; const sX = parseFloat(item.dataset.startX); const sY = parseFloat(item.dataset.startY); let nX = sX + dX; let nY = sY + dY; if (item.dataset.type === 'note') nY -= dragCorrectionY; const mXDOM = workspace.scrollWidth - item.offsetWidth; const mYDOM = workspace.scrollHeight - item.offsetHeight; item.style.left = `${Math.max(0,Math.min(nX,mXDOM))}px`; item.style.top = `${Math.max(0,Math.min(nY,mYDOM))}px`; updateLinesForNode(item); }); }
+        function onNodeMouseUp() { if (isDraggingNode) { isDraggingNode = false; dragCorrectionY = 0; selectedItems.forEach(item => { if (item.classList.contains('node-element')) { delete item.dataset.startX; delete item.dataset.startY; } }); document.removeEventListener('mousemove', onNodeMouseMove); document.removeEventListener('mouseup', onNodeMouseUp); } }
+        function onResizeHandleMouseDown(e) { e.preventDefault(); e.stopPropagation(); isResizing = true; resizeNode = this.parentNode; if (!selectedItems.includes(resizeNode)) { clearSelection(); selectItem(resizeNode); } else if (selectedItems.length > 1) { clearSelection(); selectItem(resizeNode); } resizeStartX = e.pageX; resizeStartY = e.pageY; resizeStartWidth = resizeNode.offsetWidth; resizeStartHeight = resizeNode.offsetHeight; resizeNode.dataset.startY = String(resizeNode.offsetTop); document.addEventListener('mousemove', onResizeMouseMove); document.addEventListener('mouseup', onGlobalResizeMouseUp); }
+        function onResizeMouseMove(e) { if (!isResizing || !resizeNode) return; e.preventDefault(); const dX = e.pageX - resizeStartX; const dY = e.pageY - resizeStartY; let nW = resizeStartWidth + dX; let nH = resizeStartHeight + dY; const minW = (resizeNode.dataset.type === 'note') ? 80 : 50; const minH = (resizeNode.dataset.type === 'note') ? 40 : 30; resizeNode.style.width = `${Math.max(minW,nW)}px`; resizeNode.style.height = `${Math.max(minH,nH)}px`; updateLinesForNode(resizeNode); }
+        function onGlobalResizeMouseUp() { if (isResizing && resizeNode) { const fH = resizeNode.offsetHeight; const dH = fH - resizeStartHeight; if (dH !== 0 && resizeNode.dataset.type === 'note') { const rNID = resizeNode.dataset.id; const rNOT = parseFloat(resizeNode.dataset.startY || (resizeNode.offsetTop - dH)); const oBOR = rNOT + resizeStartHeight; const aON = Array.from(workspace.querySelectorAll(`.node-element.note-type:not([data-id="${rNID}"])`)); aON.forEach(oN => { const oNT = oN.offsetTop; const oNOTFS = parseFloat(oN.style.top || oNT); const hP = Math.abs((oN.offsetLeft+oN.offsetWidth/2)-(resizeNode.offsetLeft+resizeNode.offsetWidth/2)); const aISC = hP < Math.max(oN.offsetWidth,resizeNode.offsetWidth)/1.5; if (oNT >= oBOR - 5 && aISC) { const nONT = oNOTFS + dH; oN.style.top = `${nONT}px`; updateLinesForNode(oN); } }); } delete resizeNode.dataset.startY; isResizing = false; document.removeEventListener('mousemove', onResizeMouseMove); document.removeEventListener('mouseup', onGlobalResizeMouseUp); } }
+        function clearSelection() { [...selectedItems].forEach(item => item.classList.remove('selected')); selectedItems = []; updateControlButtonsState(); }
+        function selectItem(item) { if (!selectedItems.includes(item)) { item.classList.add('selected'); selectedItems.push(item); } updateControlButtonsState(); }
+        function deselectItem(item) { const idx = selectedItems.indexOf(item); if (idx > -1) selectedItems.splice(idx,1); item.classList.remove('selected'); updateControlButtonsState(); }
+        function toggleSelectItem(item) { if (selectedItems.includes(item)) deselectItem(item); else selectItem(item); }
+        function createLineBetweenNodes(node1, node2, lineId = null) { const exL = lines.find(l=>(l.node1===node1&&l.node2===node2)||(l.node1===node2&&l.node2===node1)); if(exL)return exL; const nLITU = lineId||`line-${nextLineId++}`; const lE = document.createElement('div'); lE.className='line';lE.dataset.id=nLITU;lE.dataset.type='line';lE.dataset.node1Id=node1.dataset.id;lE.dataset.node2Id=node2.dataset.id; workspace.insertBefore(lE,workspace.firstChild); const h1=createLineHandle(lE,'start');const h2=createLineHandle(lE,'end'); workspace.appendChild(h1);workspace.appendChild(h2); const lD={id:nLITU,element:lE,node1:node1,node2:node2,handle1:h1,handle2:h2}; lines.push(lD);updateLinePosition(lD); lE.addEventListener('mousedown',(e)=>{ e.stopPropagation(); if(!e.ctrlKey&&!e.metaKey){if(!selectedItems.includes(lE)||selectedItems.filter(it=>it.classList.contains('line')).length>1){const oS=selectedItems.filter(it=>!it.classList.contains('line'));clearSelection();oS.forEach(it=>selectItem(it));}} toggleSelectItem(lE);}); updateControlButtonsState();return lD;}
+        function updateLinePosition(lineData) { if(!lineData||!lineData.node1||!lineData.node2||!lineData.node1.offsetParent||!lineData.node2.offsetParent)return; const x1=lineData.node1.offsetLeft+lineData.node1.offsetWidth/2;const y1=lineData.node1.offsetTop+lineData.node1.offsetHeight/2; const x2=lineData.node2.offsetLeft+lineData.node2.offsetWidth/2;const y2=lineData.node2.offsetTop+lineData.node2.offsetHeight/2; const len=Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2)); const ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI; lineData.element.style.left=x1+'px';lineData.element.style.top=y1+'px';lineData.element.style.width=len+'px';lineData.element.style.transform=`rotate(${ang}deg)`; if(lineData.handle1){lineData.handle1.style.left=x1+'px';lineData.handle1.style.top=y1+'px';} if(lineData.handle2){lineData.handle2.style.left=x2+'px';lineData.handle2.style.top=y2+'px';}}
+        function updateLinesForNode(node) { lines.forEach(lD => { if (lD.node1 === node || lD.node2 === node) updateLinePosition(lD); }); }
+        function createLineHandle(lE,role) { const h=document.createElement('div');h.className='line-handle';h.dataset.role=role;h.dataset.lineId=lE.dataset.id;return h;}
+        function removeLine(lineToRemove) { let lD=lineToRemove.element?lineToRemove:(lineToRemove.classList&&lineToRemove.classList.contains('line')?lines.find(l=>l.element===lineToRemove):null); if(!lD)return; if(lD.handle1&&lD.handle1.parentNode)lD.handle1.parentNode.removeChild(lD.handle1); if(lD.handle2&&lD.handle2.parentNode)lD.handle2.parentNode.removeChild(lD.handle2); if(lD.element&&lD.element.parentNode)lD.element.parentNode.removeChild(lD.element); lines=lines.filter(l=>l.id!==lD.id); }
+        
+        function updateControlButtonsState() {
+            const selectedNodeElements = selectedItems.filter(it => it.classList.contains('node-element'));
+            const totalSelected = selectedItems.length;
+            deleteSelectedBtn.disabled = totalSelected === 0;
+            connectBtn.disabled = selectedNodeElements.length !== 2;
+            duplicateBtn.disabled = !(selectedNodeElements.length === 1 && totalSelected === 1);
+        }
+        
+        saveDiagramBtn.addEventListener('click', function() { 
+            const nodesData = Array.from(workspace.querySelectorAll('.node-element')).map(node => { 
+                const data = { 
+                    id: node.dataset.id, type: node.dataset.type, label: node.dataset.label, 
+                    x: parseFloat(node.style.left || 0), y: parseFloat(node.style.top || 0)
+                };
+                if (node.dataset.customIconUrl) { data.customIconUrl = node.dataset.customIconUrl; }
+                else if (node.dataset.type === 'custom_image') { const img = node.querySelector('img'); if (img) data.imageSrc = img.getAttribute('src'); }
+                if (node.dataset.type === 'note') { data.width = node.style.width; data.height = node.style.height; }
+                return data; 
+            }); 
+            const connectionsData = lines.map(line => ({ id: line.id, node1Id: line.element.dataset.node1Id, node2Id: line.element.dataset.node2Id })); 
+            const diagramData = { 
+                nodes: nodesData, lines: connectionsData, deviceCounters: { ...deviceCounters }, 
+                nextLineId: nextLineId, selectedCustomImage: selectedCustomImage 
+            }; 
+            const dataStr = JSON.stringify(diagramData, null, 2); 
+            const blob = new Blob([dataStr], { type: 'application/json' }); 
+            const url = URL.createObjectURL(blob); 
+            const a = document.createElement('a'); 
+            a.href = url; 
+            const timestamp = new Date().toISOString().replace(/[:.-]/g, '').slice(0, -4); 
+            a.download = `network-diagram-${timestamp}.json`; 
+            document.body.appendChild(a); 
+            a.click(); 
+            document.body.removeChild(a); 
+            URL.revokeObjectURL(url); 
+            alert('Sơ đồ đã được lưu!'); 
+        });
+
+        loadDiagramBtn.addEventListener('click', function() { loadDiagramInput.click(); });
+        
+        loadDiagramInput.addEventListener('change', function(e) { 
+            const file = e.target.files[0]; 
+            if (!file) return; 
+            if (!file.name.endsWith('.json')) { alert('Vui lòng chọn file JSON!'); e.target.value = ''; return; } 
+            const reader = new FileReader(); 
+            reader.onload = function(event) { 
+                let tempWorkspaceHTML = workspace.innerHTML;  
+                try { 
+                    const diagramData = JSON.parse(event.target.result); 
+                    if (!diagramData.nodes) { throw new Error("Dữ liệu JSON không hợp lệ (thiếu nodes)."); } 
+                    if (!confirm('Tải sơ đồ mới sẽ xóa sơ đồ hiện tại. Bạn có muốn tiếp tục?')) {  e.target.value = ''; return;  } 
+                    workspace.innerHTML = ''; 
+                    lines = []; 
+                    selectedItems = []; 
+                    deviceCounters = diagramData.deviceCounters || { pc: 0, switch: 0, router: 0, server: 0, firewall: 0, custom_image: 0, hidden_point: 0, 'port-label': 0, note: 0 }; 
+                    nextLineId = 1;  
+                    const nodeMap = new Map(); 
+                    if (diagramData.nodes) { 
+                        diagramData.nodes.forEach(nodeData => { 
+                            let iconToUse = nodeData.customIconUrl || (nodeData.type === 'custom_image' ? nodeData.imageSrc : null);
+                            const node = createNodeElement( 
+                                nodeData.type, nodeData.x, nodeData.y, nodeData.id, nodeData.label,  
+                                iconToUse, nodeData.width, nodeData.height, nodeData.customIconUrl
+                            ); 
+                            if (node) { 
+                                nodeMap.set(nodeData.id, node); 
+                                const idParts = nodeData.id.split('-'); 
+                                if (idParts.length > 1) {  
+                                    const num = parseInt(idParts[idParts.length - 1], 10); 
+                                    if (!isNaN(num) && deviceCounters[nodeData.type] !== undefined) { 
+                                        deviceCounters[nodeData.type] = Math.max(deviceCounters[nodeData.type] || 0, num); 
+                                    } 
+                                } 
+                            } 
+                        }); 
+                    } 
+                    if (diagramData.lines) { 
+                        diagramData.lines.forEach(lineData => { 
+                            const node1 = nodeMap.get(lineData.node1Id); 
+                            const node2 = nodeMap.get(lineData.node2Id); 
+                            if (node1 && node2) { 
+                                createLineBetweenNodes(node1, node2, lineData.id); 
+                                if (lineData.id) {  
+                                    const numericIdMatch = lineData.id.match(/\d+$/);  
+                                    if (numericIdMatch) { 
+                                        nextLineId = Math.max(nextLineId, parseInt(numericIdMatch[0], 10) + 1); 
+                                    } 
+                                } 
+                            } 
+                        }); 
+                    } 
+                    if (!diagramData.lines && diagramData.nextLineId === undefined) nextLineId = 1;  
+                    else if (diagramData.nextLineId !== undefined) nextLineId = diagramData.nextLineId;  
+                    if (diagramData.selectedCustomImage) { 
+                        selectedCustomImage = diagramData.selectedCustomImage; 
+                        const selectedOption = sampleCustomImages.find(opt => opt.filename === selectedCustomImage); 
+                        if (toolLabelForCustomImage && selectedOption) { 
+                            toolLabelForCustomImage.textContent = selectedOption.label; 
+                        } else if (toolLabelForCustomImage) { 
+                            toolLabelForCustomImage.textContent = "Ảnh khác"; 
+                        } 
+                    } 
+                    updateControlButtonsState(); 
+                    alert('Sơ đồ đã được tải lại thành công!'); 
+                } catch (error) { 
+                    console.error('Lỗi khi tải hoặc phân tích sơ đồ:', error); 
+                    alert(`Không thể tải sơ đồ: ${error.message}`); 
+                    workspace.innerHTML = tempWorkspaceHTML;  
+                } finally { 
+                    loadDiagramInput.value = ''; 
+                } 
+            }; 
+            reader.onerror = function() { alert('Lỗi khi đọc file!'); loadDiagramInput.value = ''; }; 
+            reader.readAsText(file); 
+        });
+        workspace.addEventListener('mousedown', (e) => { if (e.target === workspace) clearSelection(); });
+        connectBtn.addEventListener('click', () => { const selNs=selectedItems.filter(i=>i.classList.contains('node-element')); if(selNs.length===2){createLineBetweenNodes(selNs[0],selNs[1]);clearSelection();}else alert('Chọn 2 node để kết nối.'); });
+        deleteSelectedBtn.addEventListener('click', () => { const iTD=[...selectedItems]; iTD.forEach(item => { if(item.classList.contains('node-element')){ const rLs=lines.filter(l=>l.node1===item||l.node2===item); rLs.forEach(l=>removeLine(l)); if(item.parentNode)item.parentNode.removeChild(item); } else if(item.classList.contains('line'))removeLine(item); }); clearSelection(); });
+        clearAllBtn.addEventListener('click', () => { if(confirm('Xóa tất cả?')){workspace.innerHTML='';lines=[];deviceCounters={pc:0,switch:0,router:0,server:0,firewall:0,custom_image:0,hidden_point:0,'port-label':0,note:0};nextLineId=1;clearSelection(); updateControlButtonsState();}});
+        duplicateBtn.addEventListener('click', function() { 
+            const selNs = selectedItems.filter(i => i.classList.contains('node-element')); 
+            if (!(selNs.length === 1 && selectedItems.length === 1)) { alert('Chọn 1 node để nhân đôi.'); return; } 
+            const oI = selNs[0];
+            const type = oI.dataset.type;
+            const nX = oI.offsetLeft + 20;
+            const nY = oI.offsetTop + 20;
+            const lTC = oI.dataset.label;
+            let currentIconSrc = null;
+            
+            if (oI.dataset.customIconUrl) { currentIconSrc = oI.dataset.customIconUrl; } 
+            else if (type === 'custom_image') { const imgElement = oI.querySelector('img'); if (imgElement) currentIconSrc = imgElement.src; } 
+            
+            const dN = createNodeElement(type, nX, nY, null, lTC, 
+                (type === 'custom_image' && !oI.dataset.customIconUrl) ? currentIconSrc : null,
+                oI.style.width, oI.style.height, 
+                oI.dataset.customIconUrl
+            ); 
+            if (dN) { clearSelection(); selectItem(dN); }
+        });
+        
+        // Initial Setup
+        updateControlButtonsState();
+    </script>
+</body>
+</html>
