@@ -1,39 +1,11 @@
 <!DOCTYPE html>
 <html lang="vi">
- <head>
-  <style>
-   body { display: flex; }
-            .lab-sidebar {
-                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
-                position: fixed; top: 0; left: 0; padding-top: 20px;
-                display: flex; flex-direction: column;
-            }
-            .lab-sidebar h2 {
-                text-align: center; color: #1abc9c; padding-bottom: 20px;
-                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
-            }
-            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
-            .lab-sidebar li a {
-                display: block; padding: 15px 30px; color: #ecf0f1;
-                text-decoration: none; font-size: 1.1em; font-weight: bold;
-            }
-            .lab-sidebar li a:hover { background-color: #34495e; }
-            .main-lab-content {
-                margin-left: 260px; padding: 2rem;
-                width: calc(100% - 260px - 4rem);
-            }
-            @media (max-width: 768px) {
-                .lab-sidebar { display: none; }
-                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
-            }
-  </style>
-  <meta charset="utf-8">
-  <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>
-   Tool Vẽ Sơ &Dstrok;ồ Mạng - HaiNguyenIT Labs
-  </title>
-  <style>
-   /* CSS được đơn giản hóa */
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng CCNA CCNP - Chế độ Tĩnh</title>
+    <style>
+        /* CSS được đơn giản hóa */
         body { font-family: Arial, sans-serif; padding: 0; margin: 0; height: 100vh; display: flex; flex-direction: column; }
         #toolbox { display: flex; gap: 5px; padding: 5px; background: #f0f0f0; border-bottom: 1px solid #ccc; flex-wrap: wrap; }
         .tool { width: 90px; height: 30px; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; cursor: grab; border-radius: 3px; user-select: none; font-size: 12px; position: relative; }
@@ -73,86 +45,39 @@
         .control-btn:hover {opacity:0.9;}
         .control-btn:disabled {background-color:#ccc;cursor:not-allowed;opacity:0.7;}
         .save-load {background:#FF9800;}
-  </style>
- </head>
- <body>
-  <aside class="lab-sidebar">
-   <h2>
-    HaiNguyenIT Labs
-   </h2>
-   <ul>
-    <li>
-     <a href="https://hainguyenit.site">
-      Về trang chủ
-     </a>
-    </li>
-    <li>
-     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
-      V&agrave;o kho&aacute; học
-     </a>
-    </li>
-   </ul>
-  </aside>
-  <main class="main-lab-content">
-   <div id="toolbox">
-    <div class="tool" data-type="pc" draggable="true">
-     M&aacute;y t&iacute;nh
+    </style>
+</head>
+<body>
+    <div id="toolbox">
+        <div class="tool" draggable="true" data-type="pc">Máy tính</div>
+        <div class="tool" draggable="true" data-type="switch">Switch</div>
+        <div class="tool" draggable="true" data-type="router">Router</div>
+        <div class="tool" draggable="true" data-type="server">Server</div>
+        <div class="tool" draggable="true" data-type="firewall">Firewall</div>
+        <div class="tool custom-image-tool" data-type="custom_image">
+            <span class="tool-label">Ảnh khác</span>
+            <div class="custom-image-dropdown"></div>
+        </div>
+        <div class="tool" draggable="true" data-type="hidden_point">Điểm ẩn</div>
+        <div class="tool" draggable="true" data-type="port-label">Nhãn cổng</div>
+        <div class="tool" draggable="true" data-type="note">Ghi chú</div>
     </div>
-    <div class="tool" data-type="switch" draggable="true">
-     Switch
+
+    <div id="workspace"></div>
+
+    <div id="controls">
+        <button id="connect-btn" class="control-btn" disabled>Kết nối</button>
+        <button id="duplicate-btn" class="control-btn" disabled>Nhân đôi</button>
+        <button id="delete-selected-btn" class="control-btn" disabled>Xóa chọn</button>
+        <button id="clear-all-btn" class="control-btn">Xóa tất</button>
+        <hr style="flex-grow: 1; border: none; margin: 0 10px;">
+        <button id="save-diagram-btn" class="control-btn save-load">Lưu sơ đồ</button>
+        <button id="load-diagram-btn" class="control-btn save-load">Tải sơ đồ</button>
+        <input type="file" id="load-diagram-input" accept=".json" style="display: none;">
     </div>
-    <div class="tool" data-type="router" draggable="true">
-     Router
-    </div>
-    <div class="tool" data-type="server" draggable="true">
-     Server
-    </div>
-    <div class="tool" data-type="firewall" draggable="true">
-     Firewall
-    </div>
-    <div class="tool custom-image-tool" data-type="custom_image">
-     <span class="tool-label">
-      Ảnh kh&aacute;c
-     </span>
-     <div class="custom-image-dropdown">
-     </div>
-    </div>
-    <div class="tool" data-type="hidden_point" draggable="true">
-     &Dstrok;iểm ẩn
-    </div>
-    <div class="tool" data-type="port-label" draggable="true">
-     Nh&atilde;n cổng
-    </div>
-    <div class="tool" data-type="note" draggable="true">
-     Ghi ch&uacute;
-    </div>
-   </div>
-   <div id="workspace">
-   </div>
-   <div id="controls">
-    <button class="control-btn" disabled id="connect-btn">
-     Kết nối
-    </button>
-    <button class="control-btn" disabled id="duplicate-btn">
-     Nh&acirc;n &dstrok;&ocirc;i
-    </button>
-    <button class="control-btn" disabled id="delete-selected-btn">
-     X&oacute;a chọn
-    </button>
-    <button class="control-btn" id="clear-all-btn">
-     X&oacute;a tất
-    </button>
-    <hr style="flex-grow: 1; border: none; margin: 0 10px;">
-    <button class="control-btn save-load" id="save-diagram-btn">
-     Lưu sơ &dstrok;ồ
-    </button>
-    <button class="control-btn save-load" id="load-diagram-btn">
-     Tải sơ &dstrok;ồ
-    </button>
-    <input accept=".json" id="load-diagram-input" style="display: none;" type="file">
-   </div>
-   <script>
-    // DOM Elements
+
+    <script>
+        // DOM Elements
         const workspace = document.getElementById('workspace');
         const toolbox = document.getElementById('toolbox'); 
         const deleteSelectedBtn = document.getElementById('delete-selected-btn');
@@ -488,14 +413,6 @@
         
         // Initial Setup
         updateControlButtonsState();
-   </script>
-  </main>
-  <script>
-   (function() {
-                    if (window.location.protocol === 'file:') {
-                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
-                    }
-                })();
-  </script>
- </body>
+    </script>
+</body>
 </html>
