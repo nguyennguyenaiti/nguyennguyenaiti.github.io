@@ -1,11 +1,39 @@
 <!DOCTYPE html>
- <html lang="vi">
+<html lang="vi">
  <head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Mô phỏng 7 Lớp OSI: Hành trình của một Gói tin</title>
- <style>
-     :root {
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   osi - HaiNguyenIT Labs
+  </title>
+  <style>
+   :root {
          --bg-color: #1e1e2f;
          --layer-bg: #27293d;
          --border-color: #4d4f6b;
@@ -170,61 +198,197 @@
      .explanation-text b {
          color: #d9534f;
      }
- </style>
+  </style>
  </head>
  <body>
- 
- <div class="main-container">
-     <div class="controls">
-         <h1>Mô phỏng 7 Lớp OSI 📬</h1>
-         <button id="send-btn">Gửi Email</button>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      V&agrave;o kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div class="main-container">
+    <div class="controls">
+     <h1>
+      M&ocirc; phỏng 7 Lớp OSI 📬
+     </h1>
+     <button id="send-btn">
+      Gửi Email
+     </button>
+    </div>
+    <div class="simulation-area" id="simulation-area">
+     <div class="system" id="system-a">
+      <div class="pc">
+       <div class="icon">
+        💻
+       </div>
+       <div class="pc-label">
+        PC A
+       </div>
+      </div>
+      <div class="osi-stack" id="stack-a">
+       <div class="layer">
+        7. Application
+       </div>
+       <div class="layer">
+        6. Presentation
+       </div>
+       <div class="layer">
+        5. Session
+       </div>
+       <div class="layer">
+        4. Transport
+       </div>
+       <div class="layer">
+        3. Network
+       </div>
+       <div class="layer">
+        2. Data Link
+       </div>
+       <div class="layer">
+        1. Physical
+       </div>
+      </div>
      </div>
-     <div class="simulation-area" id="simulation-area">
-         <div class="system" id="system-a">
-             <div class="pc"><div class="icon">💻</div><div class="pc-label">PC A</div></div>
-             <div class="osi-stack" id="stack-a">
-                 <div class="layer">7. Application</div><div class="layer">6. Presentation</div>
-                 <div class="layer">5. Session</div><div class="layer">4. Transport</div>
-                 <div class="layer">3. Network</div><div class="layer">2. Data Link</div>
-                 <div class="layer">1. Physical</div>
-             </div>
-         </div>
- 
-         <svg class="connection-svg"><line id="physical-line" stroke-width="5"></line></svg>
-         <div id="bits-container"></div>
-         
-         <div class="system" id="system-b">
-             <div class="osi-stack" id="stack-b">
-                 <div class="layer">7. Application</div><div class="layer">6. Presentation</div>
-                 <div class="layer">5. Session</div><div class="layer">4. Transport</div>
-                 <div class="layer">3. Network</div><div class="layer">2. Data Link</div>
-                 <div class="layer">1. Physical</div>
-             </div>
-              <div class="pc"><div class="icon">🖥️</div><div class="pc-label">PC B</div></div>
-         </div>
-         
-         <div id="data-packet">Data</div>
-         <div id="info-popup"></div>
+     <svg class="connection-svg">
+      <line id="physical-line" stroke-width="5">
+      </line>
+     </svg>
+     <div id="bits-container">
      </div>
- 
-     <div class="explanation-container">
-         <div class="explanation-title">Tổng quan về Mô phỏng Truyền Dữ liệu qua Mô hình OSI</div>
-         <div class="explanation-text">
-             Mô hình OSI (Mô hình Tham chiếu Liên kết Hệ thống Mở) là một khung khái niệm gồm 7 lớp, mô tả cách các ứng dụng mạng giao tiếp với nhau qua một mạng lưới. Mô phỏng này minh họa hành trình của một gói tin (trong trường hợp này là một email đơn giản) khi nó được gửi từ PC A đến PC B.
-             <br><br>
-             <b>Quá trình gửi (Encapsulation - Đóng gói):</b>
-             Bắt đầu từ <b>Lớp 7 (Application)</b>, dữ liệu email được tạo ra. Sau đó, nó đi xuống các lớp dưới, mỗi lớp thêm một số thông tin điều khiển (header hoặc trailer) để đảm bảo việc truyền tải chính xác. Quá trình này được gọi là đóng gói. Bạn có thể thấy dữ liệu biến đổi từ <b>Data</b>, thành <b>Segment</b> ở Lớp 4, rồi thành <b>Packet</b> ở Lớp 3, và cuối cùng thành <b>Frame</b> ở Lớp 2 trước khi được chuyển thành luồng <b>Bit</b> ở Lớp 1 (Physical) để truyền đi.
-             <br><br>
-             <b>Quá trình nhận (De-encapsulation - Mở gói):</b>
-             Khi luồng bit đến PC B, nó đi lên các lớp của mô hình OSI ở phía nhận. Tại mỗi lớp, các thông tin điều khiển được thêm vào ở phía gửi sẽ bị loại bỏ. Quá trình này được gọi là mở gói. Bắt đầu ở <b>Lớp 1 (Physical)</b> với việc tái tạo <b>Frame</b>, sau đó qua <b>Lớp 2 (Data Link)</b> để trở thành <b>Packet</b>, lên <b>Lớp 3 (Network)</b> thành <b>Segment</b>, và cuối cùng tại <b>Lớp 4 (Transport)</b> các segment được tái hợp thành <b>Data</b>. Các lớp 5, 6 và 7 sau đó xử lý dữ liệu để cuối cùng đến được ứng dụng email ở dạng ban đầu.
-             <br><br>
-             Mô phỏng này giúp hình dung cách dữ liệu được chuẩn bị, truyền đi và sau đó được khôi phục lại thông qua các lớp khác nhau của mô hình OSI, một nền tảng quan trọng cho hoạt động của mạng máy tính hiện đại.
-         </div>
+     <div class="system" id="system-b">
+      <div class="osi-stack" id="stack-b">
+       <div class="layer">
+        7. Application
+       </div>
+       <div class="layer">
+        6. Presentation
+       </div>
+       <div class="layer">
+        5. Session
+       </div>
+       <div class="layer">
+        4. Transport
+       </div>
+       <div class="layer">
+        3. Network
+       </div>
+       <div class="layer">
+        2. Data Link
+       </div>
+       <div class="layer">
+        1. Physical
+       </div>
+      </div>
+      <div class="pc">
+       <div class="icon">
+        🖥️
+       </div>
+       <div class="pc-label">
+        PC B
+       </div>
+      </div>
      </div>
- </div>
- 
- <script>
- document.addEventListener('DOMContentLoaded', () => {
+     <div id="data-packet">
+      Data
+     </div>
+     <div id="info-popup">
+     </div>
+    </div>
+    <div class="explanation-container">
+     <div class="explanation-title">
+      Tổng quan về M&ocirc; phỏng Truyền Dữ liệu qua M&ocirc; h&igrave;nh OSI
+     </div>
+     <div class="explanation-text">
+      M&ocirc; h&igrave;nh OSI (M&ocirc; h&igrave;nh Tham chiếu Li&ecirc;n kết Hệ thống Mở) l&agrave; một khung kh&aacute;i niệm gồm 7 lớp, m&ocirc; tả c&aacute;ch c&aacute;c ứng dụng mạng giao tiếp với nhau qua một mạng lưới. M&ocirc; phỏng n&agrave;y minh họa h&agrave;nh tr&igrave;nh của một g&oacute;i tin (trong trường hợp n&agrave;y l&agrave; một email &dstrok;ơn giản) khi n&oacute; &dstrok;ược gửi từ PC A &dstrok;ến PC B.
+      <br>
+      <br>
+      <b>
+       Qu&aacute; tr&igrave;nh gửi (Encapsulation - &Dstrok;&oacute;ng g&oacute;i):
+      </b>
+      Bắt &dstrok;ầu từ
+      <b>
+       Lớp 7 (Application)
+      </b>
+      , dữ liệu email &dstrok;ược tạo ra. Sau &dstrok;&oacute;, n&oacute; &dstrok;i xuống c&aacute;c lớp dưới, mỗi lớp th&ecirc;m một số th&ocirc;ng tin &dstrok;iều khiển (header hoặc trailer) &dstrok;ể &dstrok;ảm bảo việc truyền tải ch&iacute;nh x&aacute;c. Qu&aacute; tr&igrave;nh n&agrave;y &dstrok;ược gọi l&agrave; &dstrok;&oacute;ng g&oacute;i. Bạn c&oacute; thể thấy dữ liệu biến &dstrok;ổi từ
+      <b>
+       Data
+      </b>
+      , th&agrave;nh
+      <b>
+       Segment
+      </b>
+      ở Lớp 4, rồi th&agrave;nh
+      <b>
+       Packet
+      </b>
+      ở Lớp 3, v&agrave; cuối c&ugrave;ng th&agrave;nh
+      <b>
+       Frame
+      </b>
+      ở Lớp 2 trước khi &dstrok;ược chuyển th&agrave;nh luồng
+      <b>
+       Bit
+      </b>
+      ở Lớp 1 (Physical) &dstrok;ể truyền &dstrok;i.
+      <br>
+      <br>
+      <b>
+       Qu&aacute; tr&igrave;nh nhận (De-encapsulation - Mở g&oacute;i):
+      </b>
+      Khi luồng bit &dstrok;ến PC B, n&oacute; &dstrok;i l&ecirc;n c&aacute;c lớp của m&ocirc; h&igrave;nh OSI ở ph&iacute;a nhận. Tại mỗi lớp, c&aacute;c th&ocirc;ng tin &dstrok;iều khiển &dstrok;ược th&ecirc;m v&agrave;o ở ph&iacute;a gửi sẽ bị loại bỏ. Qu&aacute; tr&igrave;nh n&agrave;y &dstrok;ược gọi l&agrave; mở g&oacute;i. Bắt &dstrok;ầu ở
+      <b>
+       Lớp 1 (Physical)
+      </b>
+      với việc t&aacute;i tạo
+      <b>
+       Frame
+      </b>
+      , sau &dstrok;&oacute; qua
+      <b>
+       Lớp 2 (Data Link)
+      </b>
+      &dstrok;ể trở th&agrave;nh
+      <b>
+       Packet
+      </b>
+      , l&ecirc;n
+      <b>
+       Lớp 3 (Network)
+      </b>
+      th&agrave;nh
+      <b>
+       Segment
+      </b>
+      , v&agrave; cuối c&ugrave;ng tại
+      <b>
+       Lớp 4 (Transport)
+      </b>
+      c&aacute;c segment &dstrok;ược t&aacute;i hợp th&agrave;nh
+      <b>
+       Data
+      </b>
+      . C&aacute;c lớp 5, 6 v&agrave; 7 sau &dstrok;&oacute; xử l&yacute; dữ liệu &dstrok;ể cuối c&ugrave;ng &dstrok;ến &dstrok;ược ứng dụng email ở dạng ban &dstrok;ầu.
+      <br>
+      <br>
+      M&ocirc; phỏng n&agrave;y gi&uacute;p h&igrave;nh dung c&aacute;ch dữ liệu &dstrok;ược chuẩn bị, truyền &dstrok;i v&agrave; sau &dstrok;&oacute; &dstrok;ược kh&ocirc;i phục lại th&ocirc;ng qua c&aacute;c lớp kh&aacute;c nhau của m&ocirc; h&igrave;nh OSI, một nền tảng quan trọng cho hoạt &dstrok;ộng của mạng m&aacute;y t&iacute;nh hiện &dstrok;ại.
+     </div>
+    </div>
+   </div>
+   <script>
+    document.addEventListener('DOMContentLoaded', () => {
      const sendBtn = document.getElementById('send-btn');
      const packet = document.getElementById('data-packet');
      const physicalLine = document.getElementById('physical-line');
@@ -388,7 +552,14 @@
      window.addEventListener('resize', drawConnectionLine);
      drawConnectionLine();
  });
- </script>
- 
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
  </body>
- </html>
+</html>

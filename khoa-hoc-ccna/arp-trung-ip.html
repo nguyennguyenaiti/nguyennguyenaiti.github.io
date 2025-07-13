@@ -1,11 +1,39 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NẾU ĐẶT TRÙNG IP TRONG LAN</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   osi - HaiNguyenIT Labs
+  </title>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
         body {
             font-family: 'Roboto', sans-serif;
@@ -204,53 +232,104 @@
             text-shadow: 0 0 10px red; transition: transform 0.5s ease;
             z-index: 20;
         }
-
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <h1>CHUYỆN GÌ XẢY RA NẾU ĐẶT TRÙNG IP</h1>
-        <div class="network-map" id="network-map">
-            <div class="device switch">
-                <div class="name">Switch</div>
-                <div class="switch-body">
-                    <div class="switch-port"></div><div class="switch-port"></div><div class="switch-port"></div>
-                    <div class="switch-port"></div><div class="switch-port"></div><div class="switch-port"></div>
-                </div>
-            </div>
-
-            <div id="pc1" class="device">
-                <div class="name">PC 1</div>
-                <div class="pc-body"></div>
-                <div class="ip">192.168.1.10</div>
-            </div>
-
-            <div id="pc2" class="device">
-                <div class="name">PC 2</div>
-                <div class="pc-body"></div>
-                <div class="ip">192.168.1.11</div>
-            </div>
-
-            <div id="pc3" class="device">
-                <div class="name">PC 3</div>
-                <div class="pc-body"></div>
-                <div class="ip">192.168.1.10 <span class="ip-status"></span></div>
-                <div class="device-notification"></div>
-            </div>
-
-            <div class="conflict-text" id="conflict-text">IP CONFLICT!</div>
-        </div>
-        <div class="status-box">
-            <p id="status-text">Mạng đang hoạt động bình thường. Dữ liệu đang được truyền tải.</p>
-        </div>
-        <div class="button-container">
-            <button id="conflict-btn">Tạo Xung đột IP</button>
-            <button id="reset-btn">Khởi động lại</button>
-        </div>
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      V&agrave;o kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div class="container">
+    <h1>
+     CHUYỆN G&Igrave; XẢY RA NẾU &Dstrok;ẶT TR&Ugrave;NG IP
+    </h1>
+    <div class="network-map" id="network-map">
+     <div class="device switch">
+      <div class="name">
+       Switch
+      </div>
+      <div class="switch-body">
+       <div class="switch-port">
+       </div>
+       <div class="switch-port">
+       </div>
+       <div class="switch-port">
+       </div>
+       <div class="switch-port">
+       </div>
+       <div class="switch-port">
+       </div>
+       <div class="switch-port">
+       </div>
+      </div>
+     </div>
+     <div class="device" id="pc1">
+      <div class="name">
+       PC 1
+      </div>
+      <div class="pc-body">
+      </div>
+      <div class="ip">
+       192.168.1.10
+      </div>
+     </div>
+     <div class="device" id="pc2">
+      <div class="name">
+       PC 2
+      </div>
+      <div class="pc-body">
+      </div>
+      <div class="ip">
+       192.168.1.11
+      </div>
+     </div>
+     <div class="device" id="pc3">
+      <div class="name">
+       PC 3
+      </div>
+      <div class="pc-body">
+      </div>
+      <div class="ip">
+       192.168.1.10
+       <span class="ip-status">
+       </span>
+      </div>
+      <div class="device-notification">
+      </div>
+     </div>
+     <div class="conflict-text" id="conflict-text">
+      IP CONFLICT!
+     </div>
     </div>
-
-    <script>
+    <div class="status-box">
+     <p id="status-text">
+      Mạng &dstrok;ang hoạt &dstrok;ộng b&igrave;nh thường. Dữ liệu &dstrok;ang &dstrok;ược truyền tải.
+     </p>
+    </div>
+    <div class="button-container">
+     <button id="conflict-btn">
+      Tạo Xung &dstrok;ột IP
+     </button>
+     <button id="reset-btn">
+      Khởi &dstrok;ộng lại
+     </button>
+    </div>
+   </div>
+   <script>
     document.addEventListener('DOMContentLoaded', () => {
         const networkMap = document.getElementById('network-map');
         const switchElem = document.querySelector('.switch');
@@ -466,6 +545,14 @@
 
         resetState();
     });
-    </script>
-</body>
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
 </html>

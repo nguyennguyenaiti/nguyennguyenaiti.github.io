@@ -1,12 +1,39 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bầu chọn STP Root Bridge- Hãy tự chọn pri và MAC</title>
-	
-    <style>
-        /* General Styling */
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   nnnn - HaiNguyenIT Labs
+  </title>
+  <style>
+   /* General Styling */
         body {
             font-family: Arial, sans-serif;
             background-color: #1a1a1a;
@@ -151,52 +178,120 @@
             border: 1px solid #00ff00; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
         }
         .log-panel p { margin: 0 0 5px 0; white-space: pre-wrap; }
-    </style>
-</head>
-<body>
-
-    <h1><br>Bầu chọn STP Root Bridge</br>Hãy tự chọn pri và MAC để thử</h1>
-
-    <div class="simulation-container" id="simulation-area">
-        <div class="switch" id="sw1">
-            <h3>Switch 1</h3>
-            <div class="thought-bubble" id="bubble1"></div>
-            <select id="prio1">
-                <option value="32768">32768</option><option value="28672">28672</option><option value="24576">24576</option><option value="4096">4096</option>
-            </select>
-            <input type="text" id="mac1" value="00:00:00:00:00:11">
-            <div class="switch-status" id="status1"></div>
-        </div>
-        <div class="switch" id="sw2">
-            <h3>Switch 2</h3>
-            <div class="thought-bubble" id="bubble2"></div>
-            <select id="prio2">
-                <option value="32768">32768</option><option value="28672">28672</option><option value="24576">24576</option><option value="4096">4096</option>
-            </select>
-            <input type="text" id="mac2" value="00:00:00:00:00:22">
-            <div class="switch-status" id="status2"></div>
-        </div>
-        <div class="switch" id="sw3">
-            <h3>Switch 3</h3>
-            <div class="thought-bubble" id="bubble3"></div>
-            <select id="prio3">
-                <option value="32768">32768</option><option value="28672">28672</option><option value="24576">24576</option><option value="4096">4096</option>
-            </select>
-            <input type="text" id="mac3" value="00:00:00:00:00:33">
-            <div class="switch-status" id="status3"></div>
-        </div>
-        <div class="controls">
-            <button id="run-button">Bắt đầu</button>
-            <button id="pause-button">Pause</button>
-        </div>
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      V&agrave;o kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <h1>
+    <br>
+    Bầu chọn STP Root BridgeH&atilde;y tự chọn pri v&agrave; MAC &dstrok;ể thử
+   </h1>
+   <div class="simulation-container" id="simulation-area">
+    <div class="switch" id="sw1">
+     <h3>
+      Switch 1
+     </h3>
+     <div class="thought-bubble" id="bubble1">
+     </div>
+     <select id="prio1">
+      <option value="32768">
+       32768
+      </option>
+      <option value="28672">
+       28672
+      </option>
+      <option value="24576">
+       24576
+      </option>
+      <option value="4096">
+       4096
+      </option>
+     </select>
+     <input id="mac1" type="text" value="00:00:00:00:00:11">
+     <div class="switch-status" id="status1">
+     </div>
     </div>
-
-    <div class="log-panel" id="log-panel">
-        <p>Chọn Priority và MAC, sau đó nhấn "Bắt đầu".</p>
+    <div class="switch" id="sw2">
+     <h3>
+      Switch 2
+     </h3>
+     <div class="thought-bubble" id="bubble2">
+     </div>
+     <select id="prio2">
+      <option value="32768">
+       32768
+      </option>
+      <option value="28672">
+       28672
+      </option>
+      <option value="24576">
+       24576
+      </option>
+      <option value="4096">
+       4096
+      </option>
+     </select>
+     <input id="mac2" type="text" value="00:00:00:00:00:22">
+     <div class="switch-status" id="status2">
+     </div>
     </div>
-
-    <script>
-        const runButton = document.getElementById('run-button');
+    <div class="switch" id="sw3">
+     <h3>
+      Switch 3
+     </h3>
+     <div class="thought-bubble" id="bubble3">
+     </div>
+     <select id="prio3">
+      <option value="32768">
+       32768
+      </option>
+      <option value="28672">
+       28672
+      </option>
+      <option value="24576">
+       24576
+      </option>
+      <option value="4096">
+       4096
+      </option>
+     </select>
+     <input id="mac3" type="text" value="00:00:00:00:00:33">
+     <div class="switch-status" id="status3">
+     </div>
+    </div>
+    <div class="controls">
+     <button id="run-button">
+      Bắt &dstrok;ầu
+     </button>
+     <button id="pause-button">
+      Pause
+     </button>
+    </div>
+   </div>
+   <div class="log-panel" id="log-panel">
+    <p>
+     Chọn Priority v&agrave; MAC, sau &dstrok;&oacute; nhấn "Bắt &dstrok;ầu".
+    </p>
+   </div>
+   <script>
+    const runButton = document.getElementById('run-button');
         const pauseButton = document.getElementById('pause-button');
         const logPanel = document.getElementById('log-panel');
         const simArea = document.getElementById('simulation-area');
@@ -392,6 +487,14 @@
             if (isPaused) { log("\n--- Mô phỏng đã Tạm dừng ---"); }
         });
         window.onload = () => { runButton.disabled = false; };
-    </script>
-</body>
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
 </html>

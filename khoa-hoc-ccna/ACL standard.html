@@ -1,11 +1,39 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mô phỏng: Người Gác Cổng Standard ACL</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   osi - HaiNguyenIT Labs
+  </title>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
 
         :root {
             --bg-color: #f0f4f8; 
@@ -211,39 +239,99 @@
         #config-btn { background-color: #3498db; color: white; }
         .test-btn { background-color: var(--success-color); color: white; }
         .button:disabled { background-color: #7f8c8d; cursor: not-allowed; }
-    </style>
-</head>
-<body>
-
-<div class="simulation-container">
-    <h1>Mô phỏng: Người Gác Cổng Standard ACL</h1>
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      V&agrave;o kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div class="simulation-container">
+    <h1>
+     M&ocirc; phỏng: Người G&aacute;c Cổng Standard ACL
+    </h1>
     <div id="diagram">
-        <svg class="svg-canvas" id="svg-canvas"></svg>
-        <div class="device" id="router-a">Router A <div class="ip-addr">192.168.10.1</div> <span class="led left"></span><span class="led right"></span></div>
-        <div class="device" id="router-b">Router B <div class="ip-addr">192.168.20.1</div> <span class="led left"></span><span class="led right"></span></div>
-        <div class="device" id="router-c">Router C <span class="led left"></span><span class="led right"></span></div>
-        <div class="device" id="server-d">🖥️ <div class="ip-addr">10.10.10.10</div></div>
-
-        <div id="packet"></div>
-        <div id="result-icon"></div>
-        <div id="chat-bubble-c"></div>
+     <svg class="svg-canvas" id="svg-canvas">
+     </svg>
+     <div class="device" id="router-a">
+      Router A
+      <div class="ip-addr">
+       192.168.10.1
+      </div>
+      <span class="led left">
+      </span>
+      <span class="led right">
+      </span>
+     </div>
+     <div class="device" id="router-b">
+      Router B
+      <div class="ip-addr">
+       192.168.20.1
+      </div>
+      <span class="led left">
+      </span>
+      <span class="led right">
+      </span>
+     </div>
+     <div class="device" id="router-c">
+      Router C
+      <span class="led left">
+      </span>
+      <span class="led right">
+      </span>
+     </div>
+     <div class="device" id="server-d">
+      🖥️
+      <div class="ip-addr">
+       10.10.10.10
+      </div>
+     </div>
+     <div id="packet">
+     </div>
+     <div id="result-icon">
+     </div>
+     <div id="chat-bubble-c">
+     </div>
     </div>
     <div class="controls">
-        <button id="config-btn" class="button">1. Cấu hình ACL</button>
-        <button id="test-a-btn" class="button test-btn" disabled>2. TEST A → D</button>
-        <button id="test-b-btn" class="button test-btn" disabled>3. TEST B → D</button>
-        <button id="reset-btn" class="button" style="background-color: #e67e22; color: white;">Làm lại</button>
+     <button class="button" id="config-btn">
+      1. Cấu h&igrave;nh ACL
+     </button>
+     <button class="button test-btn" disabled id="test-a-btn">
+      2. TEST A &rarr; D
+     </button>
+     <button class="button test-btn" disabled id="test-b-btn">
+      3. TEST B &rarr; D
+     </button>
+     <button class="button" id="reset-btn" style="background-color: #e67e22; color: white;">
+      L&agrave;m lại
+     </button>
     </div>
-</div>
-
-<div id="console-window">
+   </div>
+   <div id="console-window">
     <pre id="console-code"></pre>
-    <button id="console-close-btn" class="button" style="background-color: #f39c12; display:none; margin-top:15px;">Đã hiểu</button>
-</div>
-<div id="deny-popup" class="popup"></div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
+    <button class="button" id="console-close-btn" style="background-color: #f39c12; display:none; margin-top:15px;">
+     &Dstrok;&atilde; hiểu
+    </button>
+   </div>
+   <div class="popup" id="deny-popup">
+   </div>
+   <script>
+    document.addEventListener('DOMContentLoaded', () => {
     // --- Elements ---
     const diagram = document.getElementById('diagram');
     const svgCanvas = document.getElementById('svg-canvas');
@@ -448,7 +536,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bỏ tự động chạy, để người dùng chủ động bắt đầu
     // configureAcl(); 
 });
-</script>
-
-</body>
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
 </html>

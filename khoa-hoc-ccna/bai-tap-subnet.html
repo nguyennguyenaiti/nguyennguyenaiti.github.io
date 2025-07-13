@@ -1,11 +1,39 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mô phỏng: Bài tập chia Subnet & Gateway</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
+ <head>
+  <style>
+   body { display: flex; }
+            .lab-sidebar {
+                width: 260px; background: #2c3e50; color: #ecf0f1; height: 100vh;
+                position: fixed; top: 0; left: 0; padding-top: 20px;
+                display: flex; flex-direction: column;
+            }
+            .lab-sidebar h2 {
+                text-align: center; color: #1abc9c; padding-bottom: 20px;
+                margin: 0 0 20px 0; border-bottom: 1px solid #34495e;
+            }
+            .lab-sidebar ul { list-style: none; padding: 0; flex-grow: 1; }
+            .lab-sidebar li a {
+                display: block; padding: 15px 30px; color: #ecf0f1;
+                text-decoration: none; font-size: 1.1em; font-weight: bold;
+            }
+            .lab-sidebar li a:hover { background-color: #34495e; }
+            .main-lab-content {
+                margin-left: 260px; padding: 2rem;
+                width: calc(100% - 260px - 4rem);
+            }
+            @media (max-width: 768px) {
+                .lab-sidebar { display: none; }
+                .main-lab-content { margin-left: 0; width: 100%; padding: 1rem; }
+            }
+  </style>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   nnnn - HaiNguyenIT Labs
+  </title>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
 
         :root {
             --bg-color: #ecf0f1;
@@ -203,80 +231,158 @@
         .popup.show { opacity: 1; visibility: visible; }
         .popup.error { background-color: var(--fail-color); }
         .popup.success { background-color: var(--success-color); }
-
-    </style>
-</head>
-<body>
-
-<div id="popup-result" class="popup"></div>
-
-<div class="simulation-container">
+  </style>
+ </head>
+ <body>
+  <aside class="lab-sidebar">
+   <h2>
+    HaiNguyenIT Labs
+   </h2>
+   <ul>
+    <li>
+     <a href="https://hainguyenit.site">
+      Về trang chủ
+     </a>
+    </li>
+    <li>
+     <a href="https://hainguyenit.edubit.vn/courses" target="_blank">
+      V&agrave;o kho&aacute; học
+     </a>
+    </li>
+   </ul>
+  </aside>
+  <main class="main-lab-content">
+   <div class="popup" id="popup-result">
+   </div>
+   <div class="simulation-container">
     <div id="diagram-area">
-        <svg id="svg-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:-1;"></svg>
-
-        <div id="router" class="device"><div class="device-icon">🖧</div>Router</div>
-
-        <div class="gateway-input-container" id="gw-cont-1">
-            <label for="gw-input-1">GW Kế toán</label>
-            <input type="text" class="gateway-input" id="gw-input-1" placeholder="x.x.x.x">
+     <svg id="svg-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:-1;">
+     </svg>
+     <div class="device" id="router">
+      <div class="device-icon">
+       🖧
+      </div>
+      Router
+     </div>
+     <div class="gateway-input-container" id="gw-cont-1">
+      <label for="gw-input-1">
+       GW Kế to&aacute;n
+      </label>
+      <input class="gateway-input" id="gw-input-1" placeholder="x.x.x.x" type="text">
+     </div>
+     <div class="gateway-input-container" id="gw-cont-2">
+      <label for="gw-input-2">
+       GW Marketing
+      </label>
+      <input class="gateway-input" id="gw-input-2" placeholder="x.x.x.x" type="text">
+     </div>
+     <div class="gateway-input-container" id="gw-cont-3">
+      <label for="gw-input-3">
+       GW IT
+      </label>
+      <input class="gateway-input" id="gw-input-3" placeholder="x.x.x.x" type="text">
+     </div>
+     <div class="device switch" id="switch1">
+      <div class="device-icon">
+       &harr;
+      </div>
+      Switch
+     </div>
+     <div class="device switch" id="switch2">
+      <div class="device-icon">
+       &harr;
+      </div>
+      Switch
+     </div>
+     <div class="device switch" id="switch3">
+      <div class="device-icon">
+       &harr;
+      </div>
+      Switch
+     </div>
+     <div class="department-zone" id="zone1">
+      <div class="zone-title">
+       Kế to&aacute;n
+      </div>
+      <div class="pc-container">
+       <div class="device pc" id="pc1a">
+        <div class="device-icon">
+         💻
         </div>
-         <div class="gateway-input-container" id="gw-cont-2">
-            <label for="gw-input-2">GW Marketing</label>
-            <input type="text" class="gateway-input" id="gw-input-2" placeholder="x.x.x.x">
+        PC KT 1
+       </div>
+       <div class="device pc" id="pc1b">
+        <div class="device-icon">
+         💻
         </div>
-         <div class="gateway-input-container" id="gw-cont-3">
-            <label for="gw-input-3">GW IT</label>
-            <input type="text" class="gateway-input" id="gw-input-3" placeholder="x.x.x.x">
-        </div>
-
-        <div id="switch1" class="device switch"><div class="device-icon">↔</div>Switch</div>
-        <div id="switch2" class="device switch"><div class="device-icon">↔</div>Switch</div>
-        <div id="switch3" class="device switch"><div class="device-icon">↔</div>Switch</div>
-
-        <div id="zone1" class="department-zone">
-            <div class="zone-title">Kế toán</div>
-            <div class="pc-container">
-                <div id="pc1a" class="device pc"><div class="device-icon">💻</div>PC KT 1</div>
-                <div id="pc1b" class="device pc"><div class="device-icon">💻</div>PC KT 2</div>
-            </div>
-            <div class="subnet-placeholder" data-zone="1">Kéo subnet vào đây</div>
-        </div>
-
-        <div id="zone2" class="department-zone">
-            <div class="zone-title">Marketing</div>
-            <div id="pc2a" class="device pc"><div class="device-icon">💻</div>PC MKT 1</div>
-            <div class="subnet-placeholder" data-zone="2">Kéo subnet vào đây</div>
-        </div>
-
-        <div id="zone3" class="department-zone">
-            <div class="zone-title">IT</div>
-            <div id="pc3a" class="device pc"><div class="device-icon">💻</div>PC IT 1</div>
-            <div class="subnet-placeholder" data-zone="3">Kéo subnet vào đây</div>
-        </div>
+        PC KT 2
+       </div>
+      </div>
+      <div class="subnet-placeholder" data-zone="1">
+       K&eacute;o subnet v&agrave;o &dstrok;&acirc;y
+      </div>
+     </div>
+     <div class="department-zone" id="zone2">
+      <div class="zone-title">
+       Marketing
+      </div>
+      <div class="device pc" id="pc2a">
+       <div class="device-icon">
+        💻
+       </div>
+       PC MKT 1
+      </div>
+      <div class="subnet-placeholder" data-zone="2">
+       K&eacute;o subnet v&agrave;o &dstrok;&acirc;y
+      </div>
+     </div>
+     <div class="department-zone" id="zone3">
+      <div class="zone-title">
+       IT
+      </div>
+      <div class="device pc" id="pc3a">
+       <div class="device-icon">
+        💻
+       </div>
+       PC IT 1
+      </div>
+      <div class="subnet-placeholder" data-zone="3">
+       K&eacute;o subnet v&agrave;o &dstrok;&acirc;y
+      </div>
+     </div>
     </div>
-
     <div id="controls-area">
-        <h2>Bài tập chia Subnet</h2>
-        <div class="control-group">
-            <label for="base-ip">Nhập mạng gốc:</label>
-            <input type="text" id="base-ip" value="192.168.1.0/24">
-        </div>
-        <div class="control-group">
-            <label for="subnet-slider">Chia thành Subnet: <span id="slider-value">/24</span></label>
-            <input type="range" id="subnet-slider" min="24" max="30" value="24">
-        </div>
-
-        <hr>
-
-        <h3>Các Subnet con:</h3>
-        <div id="subnet-pool"></div>
-
-        <button id="check-btn" style="width:100%; padding: 15px; font-size: 1.2em; background-color: var(--success-color); color:white; border:none; border-radius:5px; cursor:pointer; margin-top:20px;">Kiểm tra cấu hình</button>
+     <h2>
+      B&agrave;i tập chia Subnet
+     </h2>
+     <div class="control-group">
+      <label for="base-ip">
+       Nhập mạng gốc:
+      </label>
+      <input id="base-ip" type="text" value="192.168.1.0/24">
+     </div>
+     <div class="control-group">
+      <label for="subnet-slider">
+       Chia th&agrave;nh Subnet:
+       <span id="slider-value">
+        /24
+       </span>
+      </label>
+      <input id="subnet-slider" max="30" min="24" type="range" value="24">
+     </div>
+     <hr>
+     <h3>
+      C&aacute;c Subnet con:
+     </h3>
+     <div id="subnet-pool">
+     </div>
+     <button id="check-btn" style="width:100%; padding: 15px; font-size: 1.2em; background-color: var(--success-color); color:white; border:none; border-radius:5px; cursor:pointer; margin-top:20px;">
+      Kiểm tra cấu h&igrave;nh
+     </button>
     </div>
-</div>
-
-<script>
-window.onload = () => {
+   </div>
+   <script>
+    window.onload = () => {
     const baseIpInput = document.getElementById('base-ip');
     const slider = document.getElementById('subnet-slider');
     const sliderValue = document.getElementById('slider-value');
@@ -477,7 +583,14 @@ window.onload = () => {
     updateUI();
     drawLines();
 };
-</script>
-
-</body>
+   </script>
+  </main>
+  <script>
+   (function() {
+                    if (window.location.protocol === 'file:') {
+                        document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px;">LỖI: Không thể chạy bài lab này từ file offline.</h1>';
+                    }
+                })();
+  </script>
+ </body>
 </html>
