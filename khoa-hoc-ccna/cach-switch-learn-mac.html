@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng: Switch Layer 2 Học Địa chỉ MAC</title>
+<style>
+    :root {
+        --bg-color: #f0f4f8;
+        --switch-bg: #34495e;
+        --pc-bg: #ffffff;
+        --pc-border: #7f8c8d;
+        --line-color: #95a5a6;
+        --packet-color: #f1c40f;
+        --success-color: #2ecc71;
+        --fail-color: #e74c3c;
+        --info-color: #3498db;
+        --orange-highlight: #e67e22; /* Màu cam cho highlight */
+    }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: var(--bg-color);
+        margin: 0;
+    }
+    .container {
+        display: flex;
+        gap: 30px;
+        align-items: flex-start;
+        padding: 20px;
+    }
+    .diagram-container {
+        position: relative;
+        width: 600px;
+        height: 500px;
+    }
+    .device {
+        position: absolute;
+        width: 80px;
+        height: 60px;
+        background-color: var(--pc-bg);
+        border: 2px solid var(--pc-border);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .device .mac-address {
+        font-size: 10px;
+        color: #555;
+    }
+    #pc-a { top: 20px; left: 50%; transform: translateX(-50%); }
+    #pc-b { top: 50%; right: 20px; transform: translateY(-50%); }
+    #pc-c { bottom: 20px; left: 50%; transform: translateX(-50%); }
+    #pc-d { top: 50%; left: 20px; transform: translateY(-50%); }
+    
+    #switch {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200px;
+        height: 100px;
+        background-color: var(--switch-bg);
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 20px;
+        font-weight: bold;
+    }
+    #switch .ports {
+        position: absolute;
+        bottom: 10px;
+        display: flex;
+        gap: 10px;
+    }
+    .port {
+        width: 15px;
+        height: 10px;
+        background-color: #7f8c8d;
+        border-radius: 2px;
+    }
+
+    .svg-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+    .packet {
+        position: absolute;
+        width: 30px;
+        height: 20px;
+        z-index: 10;
+        font-size: 24px;
+        line-height: 20px;
+        transition: all 1s ease-in-out;
+        transform-origin: center center;
+    }
+    .packet.rejected {
+        transform: scale(0.5);
+        opacity: 0.2;
+    }
+
+    .info-panel {
+        width: 350px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .mac-table-container, .controls, .log-container {
+        background-color: var(--pc-bg);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    #mac-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    #mac-table th, #mac-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+        transition: all 0.5s ease; /* Thêm transition cho mượt mà */
+    }
+    #mac-table th {
+        background-color: #f2f2f2;
+    }
+    /* Sửa đổi quy tắc animation */
+    #mac-table tr.new-entry {
+        /* 'forwards' giữ lại trạng thái ở keyframe cuối cùng */
+        animation: highlight-new 2s ease-out forwards;
+    }
+    /* Sửa đổi keyframes */
+    @keyframes highlight-new {
+        from {
+            background-color: var(--orange-highlight);
+            color: white;
+            transform: scale(1.05); /* Phóng to một chút */
+        }
+        to {
+            background-color: white;
+            color: black;
+            transform: scale(1);
+            font-weight: bold; /* In đậm ở trạng thái cuối cùng */
+        }
+    }
+    #log {
+        height: 100px;
+        background-color: #2c3e50;
+        color: #ecf0f1;
+        font-family: 'Roboto Mono', monospace;
+        padding: 10px;
+        border-radius: 6px;
+        overflow-y: auto;
+    }
+    .log-message {
+        margin: 0 0 5px 0;
+        white-space: pre-wrap;
+    }
+    select, button { padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; }
+    button { background-color: var(--info-color); color: white; cursor: pointer; border-color: var(--info-color); }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="diagram-container" id="diagram">
+        <svg class="svg-canvas" id="svg-canvas"></svg>
+        <div id="switch">Switch</div>
+        <div class="device" id="pc-a">PC A <div class="mac-address">00:0A</div></div>
+        <div class="device" id="pc-b">PC B <div class="mac-address">00:0B</div></div>
+        <div class="device" id="pc-c">PC C <div class="mac-address">00:0C</div></div>
+        <div class="device" id="pc-d">PC D <div class="mac-address">00:0D</div></div>
+    </div>
+
+    <div class="info-panel">
+        <div class="controls">
+            <h3>Điều khiển mô phỏng</h3>
+            <label for="source-pc">Gửi từ:</label>
+            <select id="source-pc">
+                <option value="pc-a">PC A</option>
+                <option value="pc-b">PC B</option>
+                <option value="pc-c">PC C</option>
+                <option value="pc-d">PC D</option>
+            </select>
+            <label for="dest-pc">đến:</label>
+            <select id="dest-pc">
+                <option value="pc-b">PC B</option>
+                <option value="pc-a">PC A</option>
+                <option value="pc-c">PC C</option>
+                <option value="pc-d">PC D</option>
+            </select>
+            <br><br>
+            <button id="send-btn">Gửi gói tin</button>
+            <button id="reset-btn" style="background-color: #e67e22;">Làm lại</button>
+        </div>
+        <div class="mac-table-container">
+            <h3>Bảng Địa chỉ MAC</h3>
+            <table id="mac-table">
+                <thead><tr><th>Địa chỉ MAC</th><th>Cổng (Port)</th></tr></thead>
+                <tbody id="mac-table-body">
+                    </tbody>
+            </table>
+        </div>
+        <div class="log-container">
+            <h3>Nhật ký hoạt động</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const diagram = document.getElementById('diagram');
+    const svgCanvas = document.getElementById('svg-canvas');
+    const macTableBody = document.getElementById('mac-table-body');
+    const logEl = document.getElementById('log');
+    const sendBtn = document.getElementById('send-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const devices = {
+        'pc-a': { id: 'pc-a', mac: '00:00:00:00:00:0A', port: 1 },
+        'pc-b': { id: 'pc-b', mac: '00:00:00:00:00:0B', port: 2 },
+        'pc-c': { id: 'pc-c', mac: '00:00:00:00:00:0C', port: 3 },
+        'pc-d': { id: 'pc-d', mac: '00:00:00:00:00:0D', port: 4 }
+    };
+    let macAddressTable = {}; // { 'MAC-A': 1, 'MAC-B': 2 }
+
+    const getElementCenter = (el) => {
+        const rect = el.getBoundingClientRect();
+        const diagramRect = diagram.getBoundingClientRect();
+        return {
+            x: rect.left - diagramRect.left + rect.width / 2,
+            y: rect.top - diagramRect.top + rect.height / 2
+        };
+    };
+
+    const switchPos = getElementCenter(document.getElementById('switch'));
+
+    function drawLines() {
+        svgCanvas.innerHTML = '';
+        for (const pcId in devices) {
+            const pcEl = document.getElementById(pcId);
+            const pcPos = getElementCenter(pcEl);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', pcPos.x);
+            line.setAttribute('y1', pcPos.y);
+            line.setAttribute('x2', switchPos.x);
+            line.setAttribute('y2', switchPos.y);
+            line.setAttribute('stroke', 'var(--line-color)');
+            line.setAttribute('stroke-width', '3');
+            svgCanvas.appendChild(line);
+        }
+    }
+
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const log = (message, color) => {
+        const p = document.createElement('p');
+        p.className = 'log-message';
+        p.textContent = `> ${message}`;
+        p.style.color = color || 'var(--text-light)';
+        logEl.appendChild(p);
+        logEl.scrollTop = logEl.scrollHeight;
+    };
+    
+    function updateMacTableUI() {
+        macTableBody.innerHTML = '';
+        for (const mac in macAddressTable) {
+            const port = macAddressTable[mac];
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${mac.slice(-5)}</td><td>${port}</td>`;
+            macTableBody.appendChild(tr);
+        }
+    }
+
+    async function sendPacket() {
+        sendBtn.disabled = true;
+        const sourceId = document.getElementById('source-pc').value;
+        const destId = document.getElementById('dest-pc').value;
+
+        if (sourceId === destId) {
+            alert("Vui lòng chọn 2 PC khác nhau.");
+            sendBtn.disabled = false;
+            return;
+        }
+
+        const sourcePC = devices[sourceId];
+        const destPC = devices[destId];
+        const sourcePos = getElementCenter(document.getElementById(sourceId));
+
+        log(`Gói tin từ ${sourcePC.id.toUpperCase()} đến ${destPC.id.toUpperCase()}`);
+        
+        // --- Giai đoạn 1: Gửi từ PC đến Switch ---
+        const packet = document.createElement('div');
+        packet.className = 'packet';
+        packet.textContent = '✉️';
+        packet.style.left = `${sourcePos.x - 15}px`;
+        packet.style.top = `${sourcePos.y - 10}px`;
+        diagram.appendChild(packet);
+        await sleep(50);
+        packet.style.left = `${switchPos.x - 15}px`;
+        packet.style.top = `${switchPos.y - 10}px`;
+        await sleep(1100);
+
+        // --- Giai đoạn 2: Switch xử lý ---
+        // 2.1: Học địa chỉ MAC nguồn
+        const isNewMac = !macAddressTable[sourcePC.mac];
+        if (isNewMac) {
+            log(`Học địa chỉ nguồn: MAC ${sourcePC.mac.slice(-5)} ở Cổng ${sourcePC.port}`, 'var(--success-color)');
+            macAddressTable[sourcePC.mac] = sourcePC.port;
+            // Tạm thời hiển thị lại bảng không có animation
+            const oldHtml = macTableBody.innerHTML;
+            updateMacTableUI();
+            
+            // Tìm và thêm class 'new-entry' để kích hoạt animation
+            for(let i = 0; i < macTableBody.rows.length; i++){
+                const row = macTableBody.rows[i];
+                if(row.cells[0].textContent === sourcePC.mac.slice(-5)){
+                    row.classList.add('new-entry');
+                    break;
+                }
+            }
+            await sleep(2000); // Chờ animation hoàn tất
+        }
+
+
+        // 2.2: Tra cứu địa chỉ MAC đích
+        const destPort = macAddressTable[destPC.mac];
+        if (destPort) {
+            // --- Kịch bản FORWARDING ---
+            log(`Tìm thấy MAC đích: ${destPC.mac.slice(-5)} ở Cổng ${destPort}!`, 'var(--success-color)');
+            log(`Chuyển tiếp (Forward) frame ra Cổng ${destPort}...`);
+            const targetPos = getElementCenter(document.getElementById(destPC.id));
+            packet.style.left = `${targetPos.x - 15}px`;
+            packet.style.top = `${targetPos.y - 10}px`;
+            await sleep(1100);
+            diagram.removeChild(packet);
+        } else {
+            // --- Kịch bản FLOODING ---
+            log(`Không tìm thấy MAC đích ${destPC.mac.slice(-5)} trong bảng.`, 'var(--fail-color)');
+            log('Lụt (Flood) frame ra tất cả các cổng khác...');
+            diagram.removeChild(packet);
+            
+            const floodPackets = [];
+            for (const pcId in devices) {
+                if (pcId !== sourceId) { // Không gửi lại cổng nguồn
+                    const p = document.createElement('div');
+                    p.className = 'packet';
+                    p.textContent = '✉️';
+                    p.style.left = `${switchPos.x - 15}px`;
+                    p.style.top = `${switchPos.y - 10}px`;
+                    diagram.appendChild(p);
+                    floodPackets.push({ el: p, id: pcId });
+                }
+            }
+            await sleep(50);
+
+            floodPackets.forEach(pInfo => {
+                const targetPos = getElementCenter(document.getElementById(pInfo.id));
+                pInfo.el.style.left = `${targetPos.x - 15}px`;
+                pInfo.el.style.top = `${targetPos.y - 10}px`;
+                if (pInfo.id !== destId) {
+                    pInfo.el.classList.add('rejected');
+                }
+            });
+            await sleep(1100);
+            floodPackets.forEach(pInfo => diagram.removeChild(pInfo.el));
+        }
+        
+        log('Hoàn thành!');
+        sendBtn.disabled = false;
+    }
+
+    function reset() {
+        macAddressTable = {};
+        updateMacTableUI();
+        logEl.innerHTML = '';
+        const allRows = macTableBody.querySelectorAll('tr');
+        allRows.forEach(row => {
+            row.classList.remove('new-entry');
+            row.style.fontWeight = 'normal';
+        });
+        log('Bảng MAC đã được xóa. Sẵn sàng mô phỏng lại.');
+    }
+
+    sendBtn.addEventListener('click', sendPacket);
+    resetBtn.addEventListener('click', reset);
+    
+    // Khởi tạo
+    drawLines();
+    window.addEventListener('resize', drawLines);
+    log('Bảng MAC ban đầu trống. Switch hoạt động ở chế độ "học".');
+});
+</script>
+
+</body>
+</html>

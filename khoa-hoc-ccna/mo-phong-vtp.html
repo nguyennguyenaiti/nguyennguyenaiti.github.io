@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng VTP (với Revision Number)</title>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            color: #005a9e;
+            text-align: center;
+        }
+
+        .control-panel {
+            margin-bottom: 30px;
+            background-color: #fff;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .control-panel input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .simulation-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .switch-container {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .switch {
+            width: 280px;
+            background-color: #ffffff;
+            border: 2px solid #a0a0a0;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .switch h3 {
+            text-align: center;
+            margin: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            color: #005a9e;
+        }
+
+        .domain-display, .revision-display {
+            text-align: center;
+            font-size: 0.9em;
+            color: #555;
+            margin: -5px 0;
+        }
+        .domain-display span, .revision-display span {
+            font-weight: bold;
+            color: #d9534f;
+        }
+        .revision-display span {
+            color: #28a745;
+        }
+
+
+        .switch-controls, .vlan-management {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .switch select, .switch input, .switch button {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        .switch input[type="number"] {
+            width: 60%;
+        }
+
+        .switch button {
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+            transition: background-color 0.2s;
+        }
+
+        .switch button:hover {
+            background-color: #0056b3;
+        }
+
+        .vlan-list-container {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 80px;
+            border: 1px dashed #ddd;
+        }
+
+        .vlan-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .vlan-item {
+            background-color: #e7f3fe;
+            color: #005a9e;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .delete-vlan-btn {
+            cursor: pointer;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            line-height: 18px;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+
+        .delete-vlan-btn:hover {
+            background-color: #c9302c;
+        }
+
+        .trunk-line {
+            width: 120px;
+            height: 5px;
+            background-color: #6c757d;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .vtp-packet {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0;
+            white-space: nowrap;
+        }
+
+        .chat-bubble {
+            position: absolute;
+            bottom: 105%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.75);
+            color: #ffd700;
+            font-weight: bold;
+            padding: 10px 15px;
+            border-radius: 10px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            text-align: center;
+            width: max-content;
+            max-width: 250px;
+            z-index: 100;
+        }
+
+        .chat-bubble.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .custom-alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .custom-alert-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .custom-alert-box {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .custom-alert-overlay.show .custom-alert-box {
+            transform: scale(1);
+        }
+
+        .custom-alert-box h4 {
+            margin-top: 0;
+            color: #d9534f;
+            font-size: 1.2em;
+        }
+        
+        .custom-alert-box p {
+            margin-bottom: 20px;
+        }
+
+        .custom-alert-box button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+
+        .custom-alert-box button:hover {
+            background-color: #0056b3;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .move-right { animation: move-right-anim 2s linear forwards; }
+        @keyframes move-right-anim {
+            from { opacity: 1; left: -20px; }
+            to { opacity: 1; left: 140px; }
+        }
+
+        .move-left { animation: move-left-anim 2s linear forwards; }
+        @keyframes move-left-anim {
+            from { opacity: 1; left: 140px; }
+            to { opacity: 1; left: -20px; }
+        }
+
+        .vlan-item.removing {
+            animation: fadeOut 0.5s ease-in-out forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+    </head>
+<body>
+
+    <h1>Mô Phỏng VTP (với Revision Number)</h1>
+
+    <div class="control-panel">
+        <label for="vtp-domain">VTP Domain Name:</label>
+        <input type="text" id="vtp-domain" value="MY_DOMAIN">
+    </div>
+
+    <div class="simulation-area">
+        <div class="switch-container"><div id="sw1" class="switch"><h3>SW1</h3><p class="domain-display">Domain: <span>MY_DOMAIN</span></p><p class="revision-display">Revision: <span>0</span></p><div class="switch-controls"><label>Mode:</label><select class="mode-select" data-switch-id="1"><option value="Server" selected>Server</option><option value="Client">Client</option><option value="Transparent">Transparent</option></select></div><div class="vlan-management"><input type="number" class="vlan-input" placeholder="Nhập VLAN"><button class="add-vlan-btn" data-switch-id="1">Thêm</button></div><div class="vlan-list-container"><h4>Danh sách VLAN:</h4><ul class="vlan-list"></ul></div></div><div class="chat-bubble" id="chat-sw1"></div></div>
+        <div class="trunk-line"><div class="vtp-packet" id="packet-1-2">VTP Update</div></div>
+        <div class="switch-container"><div id="sw2" class="switch"><h3>SW2</h3><p class="domain-display">Domain: <span>MY_DOMAIN</span></p><p class="revision-display">Revision: <span>0</span></p><div class="switch-controls"><label>Mode:</label><select class="mode-select" data-switch-id="2"><option value="Server">Server</option><option value="Client">Client</option><option value="Transparent" selected>Transparent</option></select></div><div class="vlan-management"><input type="number" class="vlan-input" placeholder="Nhập VLAN"><button class="add-vlan-btn" data-switch-id="2">Thêm</button></div><div class="vlan-list-container"><h4>Danh sách VLAN:</h4><ul class="vlan-list"></ul></div></div><div class="chat-bubble" id="chat-sw2"></div></div>
+        <div class="trunk-line"><div class="vtp-packet" id="packet-2-3">VTP Update</div></div>
+        <div class="switch-container"><div id="sw3" class="switch"><h3>SW3</h3><p class="domain-display">Domain: <span>MY_DOMAIN</span></p><p class="revision-display">Revision: <span>0</span></p><div class="switch-controls"><label>Mode:</label><select class="mode-select" data-switch-id="3"><option value="Server">Server</option><option value="Client" selected>Client</option><option value="Transparent">Transparent</option></select></div><div class="vlan-management"><input type="number" class="vlan-input" placeholder="Nhập VLAN"><button class="add-vlan-btn" data-switch-id="3">Thêm</button></div><div class="vlan-list-container"><h4>Danh sách VLAN:</h4><ul class="vlan-list"></ul></div></div><div class="chat-bubble" id="chat-sw3"></div></div>
+    </div>
+
+    <div id="custom-alert-overlay" class="custom-alert-overlay"><div id="custom-alert-box" class="custom-alert-box"><h4 id="custom-alert-title">Lỗi</h4><p id="custom-alert-message"></p><button id="custom-alert-close">Đã hiểu</button></div></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const state = {
+                vtpDomain: 'MY_DOMAIN',
+                switches: {
+                    '1': { id: 1, name: 'SW1', mode: 'Server', vlans: new Set(), revision: 0 },
+                    '2': { id: 2, name: 'SW2', mode: 'Transparent', vlans: new Set(), revision: 0 },
+                    '3': { id: 3, name: 'SW3', mode: 'Client', vlans: new Set(), revision: 0 }
+                }
+            };
+
+            const customAlertOverlay = document.getElementById('custom-alert-overlay');
+            const customAlertTitle = document.getElementById('custom-alert-title');
+            const customAlertMessage = document.getElementById('custom-alert-message');
+            
+            const showAlert = (title, message) => {
+                customAlertTitle.textContent = title;
+                customAlertMessage.textContent = message;
+                customAlertOverlay.classList.add('show');
+            };
+
+            const closeAlert = () => customAlertOverlay.classList.remove('show');
+            document.getElementById('custom-alert-close').addEventListener('click', closeAlert);
+            customAlertOverlay.addEventListener('click', (e) => {
+                if(e.target === customAlertOverlay) closeAlert();
+            });
+
+            const renderSwitchUI = (switchId) => {
+                const switchData = state.switches[switchId];
+                const switchEl = document.getElementById(`sw${switchId}`);
+                
+                // Render revision number
+                switchEl.querySelector('.revision-display span').textContent = switchData.revision;
+
+                // Render VLAN list
+                const vlanListEl = switchEl.querySelector('.vlan-list');
+                vlanListEl.innerHTML = '';
+                const sortedVlans = Array.from(switchData.vlans).sort((a, b) => a - b);
+                sortedVlans.forEach(vlan => {
+                    const li = document.createElement('li');
+                    li.className = 'vlan-item';
+                    li.dataset.vlanId = vlan;
+                    li.innerHTML = `VLAN ${vlan}`;
+                    if (switchData.mode !== 'Client') {
+                         li.innerHTML += ` <button class="delete-vlan-btn" data-switch-id="${switchId}" data-vlan-id="${vlan}">x</button>`;
+                    }
+                    vlanListEl.appendChild(li);
+                });
+            };
+
+            const showChatBubble = (switchId, message) => {
+                const chatBubble = document.getElementById(`chat-sw${switchId}`);
+                chatBubble.textContent = message;
+                chatBubble.classList.add('show');
+                setTimeout(() => chatBubble.classList.remove('show'), 3500);
+            };
+
+            const animatePacket = (fromId, toId, isDeletion, onComplete) => {
+                const packetId = `packet-${Math.min(fromId, toId)}-${Math.max(fromId, toId)}`;
+                const packet = document.getElementById(packetId);
+                if (!packet) return;
+
+                const animationClass = fromId < toId ? 'move-right' : 'move-left';
+                packet.style.backgroundColor = isDeletion ? '#d9534f' : '#337ab7';
+                packet.className = 'vtp-packet';
+                void packet.offsetWidth;
+                packet.classList.add(animationClass);
+                packet.addEventListener('animationend', () => {
+                    packet.style.opacity = '0';
+                    packet.classList.remove(animationClass);
+                    if (onComplete) onComplete();
+                }, { once: true });
+            };
+
+            function sendPacketSequentially(path, vlanId, isDeletion, sourceRevision, pathIndex = 0) {
+                if (pathIndex >= path.length - 1) return;
+
+                const fromId = path[pathIndex];
+                const toId = path[pathIndex + 1];
+                const nextSwitch = state.switches[toId];
+
+                animatePacket(fromId, toId, isDeletion, () => {
+                    // *** LOGIC VỚI REVISION NUMBER ***
+                    if (nextSwitch.mode === 'Transparent') {
+                        showChatBubble(toId, "Tôi là Transparent, chỉ chuyển tiếp gói tin.");
+                    } else {
+                        // Client và Server đều phải so sánh revision
+                        if (sourceRevision > nextSwitch.revision) {
+                            showChatBubble(toId, `Đồng bộ! Revision mới: ${sourceRevision}`);
+                            nextSwitch.revision = sourceRevision;
+                            isDeletion ? nextSwitch.vlans.delete(vlanId) : nextSwitch.vlans.add(vlanId);
+                            renderSwitchUI(toId);
+                        } else {
+                            showChatBubble(toId, `Bỏ qua update. Rev của tôi (${nextSwitch.revision}) >= Rev gói tin (${sourceRevision}).`);
+                        }
+                    }
+                    
+                    // Luôn chuyển tiếp gói tin cho chặng sau
+                    sendPacketSequentially(path, vlanId, isDeletion, sourceRevision, pathIndex + 1);
+                });
+            }
+
+            function handleServerAction(serverSwitch, vlanId, isDeletion) {
+                // Tăng revision của server trước khi gửi
+                serverSwitch.revision++;
+                renderSwitchUI(serverSwitch.id); // Cập nhật UI của chính server
+
+                const actionWord = isDeletion ? "xóa" : "tạo";
+                showChatBubble(serverSwitch.id, `Đã ${actionWord} VLAN ${vlanId}, Rev mới: ${serverSwitch.revision}. Bắt đầu quảng bá.`);
+
+                const sourceRevision = serverSwitch.revision;
+
+                if (serverSwitch.id === 1) {
+                    sendPacketSequentially([1, 2, 3], vlanId, isDeletion, sourceRevision);
+                } else if (serverSwitch.id === 2) {
+                    sendPacketSequentially([2, 1], vlanId, isDeletion, sourceRevision); 
+                    sendPacketSequentially([2, 3], vlanId, isDeletion, sourceRevision);
+                } else if (serverSwitch.id === 3) {
+                    sendPacketSequentially([3, 2, 1], vlanId, isDeletion, sourceRevision);
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+            document.getElementById('vtp-domain').addEventListener('input', (e) => {
+                const domainDisplays = document.querySelectorAll('.domain-display span');
+                state.vtpDomain = e.target.value.trim();
+                domainDisplays.forEach(span => {
+                    span.textContent = state.vtpDomain || 'N/A';
+                });
+            });
+
+            document.querySelectorAll('.mode-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    const switchId = e.target.dataset.switchId;
+                    state.switches[switchId].mode = e.target.value;
+                    renderSwitchUI(switchId);
+                });
+            });
+
+            document.querySelectorAll('.add-vlan-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const switchId = e.target.dataset.switchId;
+                    const switchData = state.switches[switchId];
+                    const input = document.querySelector(`#sw${switchId} .vlan-input`);
+                    const vlanId = parseInt(input.value, 10);
+
+                    if (!vlanId || vlanId < 1 || vlanId > 4094) {
+                        showAlert("Lỗi Nhập Liệu", "Vui lòng nhập một số VLAN hợp lệ (1-4094).");
+                        return;
+                    }
+                    if (switchData.vlans.has(vlanId)) {
+                        showAlert("VLAN Đã Tồn Tại", `VLAN ${vlanId} đã có trên switch này.`);
+                        input.value = '';
+                        return;
+                    }
+                    if (switchData.mode === 'Client') {
+                        showAlert("Thao Tác Bị Cấm", "Không thể tạo VLAN. Switch đang ở chế độ Client.");
+                        return;
+                    }
+                    
+                    switchData.vlans.add(vlanId);
+                    input.value = '';
+
+                    if (switchData.mode === 'Server') {
+                        handleServerAction(switchData, vlanId, false);
+                    } else { // Transparent
+                        renderSwitchUI(switchId); // Chỉ cần cập nhật UI của chính nó
+                        showChatBubble(switchId, `Đã tạo VLAN ${vlanId} cục bộ.`);
+                    }
+                });
+            });
+
+            document.querySelector('.simulation-area').addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-vlan-btn')) {
+                    const switchId = e.target.dataset.switchId;
+                    const vlanId = parseInt(e.target.dataset.vlanId, 10);
+                    const switchData = state.switches[switchId];
+                    
+                    if (switchData.mode === 'Client') return;
+
+                    switchData.vlans.delete(vlanId);
+
+                    if (switchData.mode === 'Server') {
+                        handleServerAction(switchData, vlanId, true);
+                    } else { // Transparent
+                        renderSwitchUI(switchId); // Chỉ cần cập nhật UI của chính nó
+                    }
+                }
+            });
+
+            const initialize = () => {
+                document.getElementById('vtp-domain').dispatchEvent(new Event('input'));
+                document.querySelectorAll('.mode-select').forEach(select => select.dispatchEvent(new Event('change')));
+                Object.keys(state.switches).forEach(renderSwitchUI);
+            };
+
+            initialize();
+        });
+    </script>
+    </body>
+</html>

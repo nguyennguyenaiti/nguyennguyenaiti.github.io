@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài Tập Thực Hành: Đấu Nối Mạng HA (Bố Cục Tối Ưu)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            user-select: none;
+        }
+
+        #parts-bin {
+            width: 220px;
+            background-color: #fff;
+            padding: 20px;
+            border-right: 1px solid #d9d9d9;
+            text-align: center;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .draggable-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 160px;
+            height: 50px;
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            margin: 20px auto;
+            cursor: grab;
+            background-color: #f8f9fa;
+            font-weight: bold;
+            transition: all 0.2s ease-in-out;
+        }
+        .draggable-item:hover { transform: scale(1.05); }
+        .draggable-item:active { cursor: grabbing; }
+
+        #main-area {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background-color: #e9ecef;
+        }
+
+        #rack-area {
+            /* ✅ SỬA: Giảm chiều cao để bố cục gọn hơn */
+            height: 900px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            padding: 20px;
+        }
+        
+        .drop-zone {
+            position: absolute;
+            border: 2px dashed #adb5bd;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        
+        /* ✅ SỬA: Căn chỉnh lại vị trí các thiết bị theo chiều dọc cho cân đối */
+        #dz-isp { top: 5%; left: 50%; transform: translateX(-50%); width: 180px; height: 60px; }
+        #dz-wan-switch { top: 25%; left: 50%; transform: translateX(-50%); width: 180px; height: 60px; }
+        #dz-core-switch { top: 85%; left: 50%; transform: translateX(-50%); width: 200px; height: 60px; }
+        
+        /* ✅ SỬA: Căn chỉnh FGA và FGB đối xứng và gần nhau hơn */
+        #dz-fga { top: 55%; left: 15%; width: 240px; height: 90px; }
+        #dz-fgb { top: 55%; right: 15%; width: 240px; height: 90px; } /* Dùng right để đối xứng */
+        
+        .placed {
+            border-style: solid;
+            border-color: #343a40;
+            background-color: white;
+            cursor: default;
+        }
+        
+        .port-container { position: absolute; display: flex; gap: 8px; }
+        .port {
+            width: 22px;
+            height: 22px;
+            background-color: #fff;
+            border: 1px solid #343a40;
+            border-radius: 3px;
+            cursor: pointer;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: #495057;
+        }
+        .port:hover { border-color: #007bff; }
+        .port.selected {
+            border-color: #28a745;
+            box-shadow: 0 0 10px #28a745, inset 0 0 3px rgba(0,0,0,0.2);
+        }
+
+        #controls { text-align: center; padding: 20px 0 0 0; }
+        button {
+            padding: 12px 25px; font-size: 16px; font-weight: bold; cursor: pointer;
+            border-radius: 5px; border: none; color: white; transition: transform 0.2s;
+        }
+        button:hover { transform: translateY(-2px); }
+        #check-btn { background: linear-gradient(45deg, #28a745, #218838); }
+        #reset-btn { background: linear-gradient(45deg, #dc3545, #c82333); margin-left: 10px; }
+        
+        #status-panel { margin-top: 15px; padding: 12px; border-radius: 5px; font-weight: bold; min-height: 24px; text-align: center; }
+        #status-panel.success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+        #status-panel.error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        
+        #cable-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+    </style>
+</head>
+<body>
+    <div id="parts-bin">
+        <h3>Thiết Bị</h3>
+        <div class="draggable-item" draggable="true" id="item-isp">🌐 ISP Modem</div>
+        <div class="draggable-item" draggable="true" id="item-wan-switch">🔌 WAN Switch</div>
+        <div class="draggable-item" draggable="true" id="item-fga">🧱 FGT-A</div>
+        <div class="draggable-item" draggable="true" id="item-fgb">🧱 FGT-B</div>
+        <div class="draggable-item" draggable="true" id="item-core-switch">💻 Core Switch</div>
+    </div>
+    <div id="main-area">
+        <div id="rack-area">
+            <div class="drop-zone" id="dz-isp" data-accepts="item-isp"></div>
+            <div class="drop-zone" id="dz-wan-switch" data-accepts="item-wan-switch"></div>
+            <div class="drop-zone" id="dz-fga" data-accepts="item-fga"></div>
+            <div class="drop-zone" id="dz-fgb" data-accepts="item-fgb"></div>
+            <div class="drop-zone" id="dz-core-switch" data-accepts="item-core-switch"></div>
+            <canvas id="cable-canvas"></canvas>
+        </div>
+        <div id="controls">
+            <button id="check-btn">Kiểm Tra</button>
+            <button id="reset-btn">Làm Lại</button>
+        </div>
+        <div id="status-panel" role="alert">Kéo thiết bị vào tủ mạng và click vào các cổng để nối dây.</div>
+    </div>
+
+    <script>
+        const rackArea = document.getElementById('rack-area');
+        const canvas = document.getElementById('cable-canvas'); 
+        const ctx = canvas.getContext('2d');
+        const statusPanel = document.getElementById('status-panel');
+        const partsBin = document.getElementById('parts-bin');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const draggableItems = document.querySelectorAll('.draggable-item');
+
+        let ports = {};
+        let cables = [];
+        let selectedPort = null;
+        
+        const resizeObserver = new ResizeObserver(() => {
+            canvas.width = rackArea.clientWidth;
+            canvas.height = rackArea.clientHeight;
+            drawCables();
+        });
+        resizeObserver.observe(rackArea);
+
+        function addPortsToDevice(deviceElement, deviceId) {
+            const layouts = {
+                'isp': [ { type: 'ports', pos: { bottom: '-22px', left: '50%', transform: 'translateX(-50%)' }, ports: [{id: 'lan1', label: 'LAN'}]} ],
+                'wan-switch': [
+                    { type: 'ports', pos: { top: '-22px', left: '50%', transform: 'translateX(-50%)' }, ports: [{id: 'wan', label: 'WAN'}] },
+                    { type: 'ports', pos: { bottom: '-22px', left: '50%', transform: 'translateX(-50%)' }, ports: [{id: 'lan1', label: '1'}, {id: 'lan2', label: '2'}] }
+                ],
+                'fga': [
+                    { type: 'ports', pos: { top: '-22px', left: '15px' }, ports: [{id: 'wan1', label: 'W1'}, {id: 'wan2', label: 'W2'}] },
+                    { type: 'ports', pos: { bottom: '-22px', left: '15px' }, ports: [{id: 'p1', label: 'P1'}, {id: 'p2', label: 'P2'}] },
+                    { type: 'ports', pos: { top: '30px', right: '-25px' }, ports: [{id: 'ha', label: 'HA'}] }
+                ],
+                'fgb': [
+                    { type: 'ports', pos: { top: '-22px', left: '15px' }, ports: [{id: 'wan1', label: 'W1'}, {id: 'wan2', label: 'W2'}] },
+                    { type: 'ports', pos: { bottom: '-22px', left: '15px' }, ports: [{id: 'p1', label: 'P1'}, {id: 'p2', label: 'P2'}] },
+                    { type: 'ports', pos: { top: '30px', left: '-25px' }, ports: [{id: 'ha', label: 'HA'}] }
+                ],
+                'core-switch': [
+                    { type: 'ports', pos: { top: '-22px', left: '50%', transform: 'translateX(-50%)' }, ports: [{id: 'up1', label: 'U1'}, {id: 'up2', label: 'U2'}] }
+                ]
+            };
+            const layout = layouts[deviceId];
+            if (!layout) return;
+            layout.forEach(item => {
+                const element = document.createElement('div');
+                element.className = 'port-container';
+                item.ports.forEach(pc => {
+                    const portId = `${deviceId}_${pc.id}`;
+                    const port = document.createElement('div');
+                    port.className = 'port';
+                    port.id = portId;
+                    port.title = `${deviceId.toUpperCase()} Port ${pc.id.toUpperCase()}`;
+                    port.textContent = pc.label;
+                    port.addEventListener('click', handlePortClick);
+                    element.appendChild(port);
+                    ports[portId] = port;
+                });
+                Object.assign(element.style, item.pos);
+                deviceElement.appendChild(element);
+            });
+        }
+        
+        draggableItems.forEach(item => {
+            item.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', item.id);
+                setTimeout(() => item.style.display = 'none', 0);
+            });
+            item.addEventListener('dragend', e => {
+                const wasDropped = Array.from(dropZones).some(zone => zone.contains(item));
+                if (!wasDropped) {
+                    item.style.display = 'flex';
+                }
+            });
+        });
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', e => e.preventDefault());
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData('text');
+                const draggableElement = document.getElementById(id);
+                if (draggableElement && zone.dataset.accepts === id && zone.children.length === 0) {
+                    draggableElement.style.display = 'flex';
+                    zone.appendChild(draggableElement);
+                    draggableElement.draggable = false;
+                    zone.classList.add('placed');
+                    addPortsToDevice(zone, id.replace('item-', ''));
+                    drawCables();
+                }
+            });
+        });
+
+        function handlePortClick(e) {
+            const clickedPort = e.currentTarget;
+            if (!selectedPort) {
+                selectedPort = clickedPort;
+                selectedPort.classList.add('selected');
+            } else {
+                if (selectedPort !== clickedPort) {
+                    const c_id = [selectedPort.id, clickedPort.id].sort().join(',');
+                    const existingCableIndex = cables.findIndex(c => c.id === c_id);
+                    if (existingCableIndex > -1) {
+                        cables.splice(existingCableIndex, 1);
+                    } else {
+                        cables.push({ id: c_id, from: selectedPort.id, to: clickedPort.id, status: 'neutral' });
+                    }
+                    drawCables();
+                }
+                selectedPort.classList.remove('selected');
+                selectedPort = null;
+            }
+        }
+        
+        function drawCables() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            cables.forEach(cable => {
+                const fromPort = ports[cable.from], toPort = ports[cable.to];
+                if (!fromPort || !toPort) return;
+                const rectA = fromPort.getBoundingClientRect(), rectB = toPort.getBoundingClientRect(), canvasRect = canvas.getBoundingClientRect();
+                const startX = rectA.left + rectA.width / 2 - canvasRect.left;
+                const startY = rectA.top + rectA.height / 2 - canvasRect.top;
+                const endX = rectB.left + rectB.width / 2 - canvasRect.left;
+                const endY = rectB.top + rectB.height / 2 - canvasRect.top;
+                
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                // Điều chỉnh đường cong để trông mềm mại hơn
+                const cp1x = startX;
+                const cp1y = startY + (endY - startY) * 0.6;
+                const cp2x = endX;
+                const cp2y = endY - (endY - startY) * 0.6;
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+
+                ctx.strokeStyle = cable.status === 'correct' ? '#28a745' : cable.status === 'incorrect' ? '#dc3545' : '#495057';
+                ctx.lineWidth = cable.status === 'neutral' ? 2.5 : 3.5;
+                ctx.stroke();
+            });
+        }
+        
+        document.getElementById('check-btn').addEventListener('click', () => {
+            const correctConnections = new Set([
+                "isp_lan1,wan-switch_wan",
+                "fga_wan1,wan-switch_lan1",
+                "fgb_wan1,wan-switch_lan2",
+                "fga_ha,fgb_ha",
+                "core-switch_up1,fga_p1",
+                "core-switch_up2,fgb_p1"
+            ]);
+            let errors = [], correctCount = 0;
+            if (document.querySelectorAll('.drop-zone .draggable-item').length < 5) {
+                errors.push("Lỗi: Chưa đặt đủ 5 thiết bị vào tủ mạng.");
+            }
+            cables.forEach(cable => {
+                const sorted_id = [cable.from, cable.to].sort().join(',');
+                if (correctConnections.has(sorted_id)) {
+                    cable.status = 'correct'; correctCount++;
+                } else {
+                    cable.status = 'incorrect';
+                    errors.push(`Lỗi: Kết nối từ ${ports[cable.from].title} đến ${ports[cable.to].title} không đúng.`);
+                }
+            });
+            if (correctCount < correctConnections.size && errors.length === 0) {
+                 errors.push("Lỗi: Chưa nối đủ các dây cáp cần thiết.");
+            }
+            drawCables();
+            statusPanel.className = errors.length > 0 ? 'error' : 'success';
+            statusPanel.innerHTML = errors.length > 0 ? '<strong>Thất bại!</strong><br>' + errors.join('<br>') : '<strong>🎉 Hoàn hảo!</strong> Bạn đã đấu nối chính xác toàn bộ hệ thống.';
+        });
+        
+        function resetExercise() {
+            cables = [];
+            ports = {};
+            if (selectedPort) {
+                selectedPort.classList.remove('selected');
+                selectedPort = null;
+            }
+            drawCables();
+            statusPanel.className = '';
+            statusPanel.textContent = 'Kéo thiết bị vào tủ mạng và click vào các cổng để nối dây.';
+            dropZones.forEach(zone => {
+                zone.innerHTML = '';
+                zone.className = 'drop-zone';
+            });
+            draggableItems.forEach(item => {
+                partsBin.appendChild(item);
+                item.draggable = true;
+                item.style.display = 'flex';
+            });
+        }
+        document.getElementById('reset-btn').addEventListener('click', resetExercise);
+    </script>
+</body>
+</html>

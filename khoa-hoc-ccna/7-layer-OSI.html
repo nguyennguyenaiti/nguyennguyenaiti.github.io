@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+ <html lang="vi">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Mô phỏng 7 Lớp OSI: Hành trình của một Gói tin</title>
+ <style>
+     :root {
+         --bg-color: #1e1e2f;
+         --layer-bg: #27293d;
+         --border-color: #4d4f6b;
+         --text-color: #a9b1d6;
+         --accent-color: #ff9e64;
+         --popup-text-color: #FFD700;
+         --packet-bg: linear-gradient(180deg, #68e07c, #2ecc71);
+         --packet-text: #1a3b21;
+         --l1-color: #c0caf5;
+     }
+     body {
+         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+         background-color: var(--bg-color);
+         color: var(--text-color);
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         min-height: 100vh;
+         margin: 0;
+         padding: 20px;
+         box-sizing: border-box;
+     }
+     .main-container {
+         width: 100%;
+         max-width: 1400px;
+         text-align: center;
+     }
+     .simulation-area {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         position: relative;
+         height: 650px;
+         margin-bottom: 30px;
+     }
+     .system {
+         display: flex;
+         align-items: center;
+         gap: 20px;
+     }
+     .pc {
+         font-size: 80px;
+         text-align: center;
+     }
+     .pc-label {
+         font-size: 18px;
+         font-weight: bold;
+     }
+     .osi-stack {
+         display: flex;
+         flex-direction: column;
+         width: 200px;
+     }
+     .layer {
+         padding: 10px;
+         margin: 2px 0;
+         border: 2px solid var(--border-color);
+         border-radius: 6px;
+         font-weight: bold;
+         text-align: center;
+         background-color: var(--layer-bg);
+         transition: all 0.3s;
+     }
+     .layer.active {
+         transform: scale(1.05);
+         border-color: var(--accent-color);
+         box-shadow: 0 0 15px var(--accent-color);
+     }
+ 
+     .connection-svg {
+         position: absolute;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         z-index: -1;
+         overflow: visible;
+     }
+ 
+     .bit {
+         position: absolute;
+         width: 8px;
+         height: 8px;
+         background-color: var(--accent-color);
+         border-radius: 50%;
+     }
+ 
+     #data-packet {
+         position: absolute;
+         font-weight: bold;
+         text-align: center;
+         z-index: 10;
+         transition: all 0.8s ease-in-out;
+         opacity: 0;
+         background: var(--packet-bg);
+         color: var(--packet-text);
+         padding: 10px 20px;
+         border-radius: 8px;
+         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+         border: 1px solid #25a25a;
+         transform: translate(-50%, -50%);
+     }
+ 
+     .controls { margin-bottom: 20px; }
+     #send-btn {
+         padding: 15px 30px; font-size: 18px; font-weight: bold;
+         background: linear-gradient(45deg, var(--accent-color), #ff7f50); color: white;
+         border: none; border-radius: 8px; cursor: pointer;
+         box-shadow: 0 4px 15px rgba(255, 158, 100, 0.4); transition: all 0.3s;
+     }
+     #send-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(255, 158, 100, 0.6); }
+     #send-btn:disabled { background: #555; cursor: not-allowed; box-shadow: none;}
+ 
+     #info-popup {
+         position: fixed;
+         top: 50%; left: 50%;
+         transform: translate(-50%, -50%) scale(0.8);
+         padding: 20px 40px;
+         background-color: rgba(0, 0, 0, 0.85);
+         color: var(--popup-text-color);
+         text-shadow: 0 0 10px var(--popup-text-color);
+         border-radius: 12px;
+         border: 2px solid var(--popup-text-color);
+         font-size: 24px;
+         font-weight: bold;
+         z-index: 200;
+         opacity: 0;
+         visibility: hidden;
+         transition: all 0.4s ease-in-out;
+         text-align: center;
+     }
+     #info-popup.show {
+         opacity: 1;
+         visibility: visible;
+         transform: translate(-50%, -50%) scale(1);
+     }
+ 
+     .explanation-container {
+         max-width: 900px;
+         text-align: left;
+         margin: 40px auto;
+         padding: 25px;
+         border-radius: 10px;
+         background-color: #f8f8f2;
+         color: #282a36;
+     }
+ 
+     .explanation-title {
+         color: #005a9c;
+         font-size: 22px;
+         font-weight: bold;
+         margin-bottom: 15px;
+         text-align: center;
+         border-bottom: 2px solid #005a9c;
+         padding-bottom: 10px;
+     }
+ 
+     .explanation-text {
+         line-height: 1.7;
+         font-size: 16px;
+     }
+     .explanation-text b {
+         color: #d9534f;
+     }
+ </style>
+ </head>
+ <body>
+ 
+ <div class="main-container">
+     <div class="controls">
+         <h1>Mô phỏng 7 Lớp OSI 📬</h1>
+         <button id="send-btn">Gửi Email</button>
+     </div>
+     <div class="simulation-area" id="simulation-area">
+         <div class="system" id="system-a">
+             <div class="pc"><div class="icon">💻</div><div class="pc-label">PC A</div></div>
+             <div class="osi-stack" id="stack-a">
+                 <div class="layer">7. Application</div><div class="layer">6. Presentation</div>
+                 <div class="layer">5. Session</div><div class="layer">4. Transport</div>
+                 <div class="layer">3. Network</div><div class="layer">2. Data Link</div>
+                 <div class="layer">1. Physical</div>
+             </div>
+         </div>
+ 
+         <svg class="connection-svg"><line id="physical-line" stroke-width="5"></line></svg>
+         <div id="bits-container"></div>
+         
+         <div class="system" id="system-b">
+             <div class="osi-stack" id="stack-b">
+                 <div class="layer">7. Application</div><div class="layer">6. Presentation</div>
+                 <div class="layer">5. Session</div><div class="layer">4. Transport</div>
+                 <div class="layer">3. Network</div><div class="layer">2. Data Link</div>
+                 <div class="layer">1. Physical</div>
+             </div>
+              <div class="pc"><div class="icon">🖥️</div><div class="pc-label">PC B</div></div>
+         </div>
+         
+         <div id="data-packet">Data</div>
+         <div id="info-popup"></div>
+     </div>
+ 
+     <div class="explanation-container">
+         <div class="explanation-title">Tổng quan về Mô phỏng Truyền Dữ liệu qua Mô hình OSI</div>
+         <div class="explanation-text">
+             Mô hình OSI (Mô hình Tham chiếu Liên kết Hệ thống Mở) là một khung khái niệm gồm 7 lớp, mô tả cách các ứng dụng mạng giao tiếp với nhau qua một mạng lưới. Mô phỏng này minh họa hành trình của một gói tin (trong trường hợp này là một email đơn giản) khi nó được gửi từ PC A đến PC B.
+             <br><br>
+             <b>Quá trình gửi (Encapsulation - Đóng gói):</b>
+             Bắt đầu từ <b>Lớp 7 (Application)</b>, dữ liệu email được tạo ra. Sau đó, nó đi xuống các lớp dưới, mỗi lớp thêm một số thông tin điều khiển (header hoặc trailer) để đảm bảo việc truyền tải chính xác. Quá trình này được gọi là đóng gói. Bạn có thể thấy dữ liệu biến đổi từ <b>Data</b>, thành <b>Segment</b> ở Lớp 4, rồi thành <b>Packet</b> ở Lớp 3, và cuối cùng thành <b>Frame</b> ở Lớp 2 trước khi được chuyển thành luồng <b>Bit</b> ở Lớp 1 (Physical) để truyền đi.
+             <br><br>
+             <b>Quá trình nhận (De-encapsulation - Mở gói):</b>
+             Khi luồng bit đến PC B, nó đi lên các lớp của mô hình OSI ở phía nhận. Tại mỗi lớp, các thông tin điều khiển được thêm vào ở phía gửi sẽ bị loại bỏ. Quá trình này được gọi là mở gói. Bắt đầu ở <b>Lớp 1 (Physical)</b> với việc tái tạo <b>Frame</b>, sau đó qua <b>Lớp 2 (Data Link)</b> để trở thành <b>Packet</b>, lên <b>Lớp 3 (Network)</b> thành <b>Segment</b>, và cuối cùng tại <b>Lớp 4 (Transport)</b> các segment được tái hợp thành <b>Data</b>. Các lớp 5, 6 và 7 sau đó xử lý dữ liệu để cuối cùng đến được ứng dụng email ở dạng ban đầu.
+             <br><br>
+             Mô phỏng này giúp hình dung cách dữ liệu được chuẩn bị, truyền đi và sau đó được khôi phục lại thông qua các lớp khác nhau của mô hình OSI, một nền tảng quan trọng cho hoạt động của mạng máy tính hiện đại.
+         </div>
+     </div>
+ </div>
+ 
+ <script>
+ document.addEventListener('DOMContentLoaded', () => {
+     const sendBtn = document.getElementById('send-btn');
+     const packet = document.getElementById('data-packet');
+     const physicalLine = document.getElementById('physical-line');
+     const bitsContainer = document.getElementById('bits-container');
+     const popup = document.getElementById('info-popup');
+     const stacks = { a: document.getElementById('stack-a'), b: document.getElementById('stack-b') };
+ 
+     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+     const getLayerPos = (stackId, layerNum) => {
+         const layerEl = stacks[`${stackId}`].children[(7 - layerNum)];
+         const rect = layerEl.getBoundingClientRect();
+         const containerRect = document.getElementById('simulation-area').getBoundingClientRect();
+         return {
+             x: rect.left - containerRect.left + (rect.width / 2),
+             y: rect.top - containerRect.top + (rect.height / 2)
+         };
+     };
+ 
+     function resetPacket() {
+         packet.style.opacity = '0';
+         packet.style.transform = 'translate(-50%, -50%) scale(1)';
+         packet.style.transition = 'all 0.8s ease-in-out';
+     }
+ 
+     async function highlightLayer(stackId, layerNum, duration = 1000) {
+         const activeLayer = stacks[`${stackId}`].children[(7 - layerNum)];
+         activeLayer.classList.add('active');
+         await sleep(duration);
+         activeLayer.classList.remove('active');
+     }
+ 
+     async function showInfoPopup(text, duration = 2200) {
+         popup.innerHTML = text;
+         popup.classList.add('show');
+         await sleep(duration);
+         popup.classList.remove('show');
+         await sleep(400);
+     }
+ 
+     const encapsulationSteps = [
+         { layer: 7, text: 'L7 (Application): <br> Dữ liệu email được tạo ra.', unit: 'Data' },
+         { layer: 6, text: 'L6 (Presentation): <br> Dữ liệu được mã hoá/định dạng.' },
+         { layer: 5, text: 'L5 (Session): <br> Mở một phiên kết nối.' },
+         { layer: 4, text: 'L4 (Transport): <br> Dữ liệu được chia thành các <b>Segment</b>.', unit: 'Segment' },
+         { layer: 3, text: 'L3 (Network): <br> Thêm địa chỉ IP, trở thành <b>Packet</b>.', unit: 'Packet' },
+         { layer: 2, text: 'L2 (Data Link): <br> Thêm địa chỉ MAC, trở thành <b>Frame</b>.', unit: 'Frame' },
+         { layer: 1, text: 'L1 (Physical): <br> Frame được chuyển thành luồng <b>Bit</b>.' }
+     ];
+ 
+     const deencapsulationSteps = [
+         { layer: 1, text: 'L1 (Physical):<br>Tái tạo luồng bit thành <b>Frame</b>.' },
+         { layer: 2, text: 'L2 (Data Link):<br>Xử lý Frame, lấy ra <b>Packet</b>.',       nextUnit: 'Packet' },
+         { layer: 3, text: 'L3 (Network):<br>Xử lý Packet, lấy ra <b>Segment</b>.',     nextUnit: 'Segment' },
+         { layer: 4, text: 'L4 (Transport):<br>Tái hợp Segment thành <b>Data</b>.',    nextUnit: 'Data' },
+         { layer: 5, text: 'L5 (Session):<br>Xử lý dữ liệu cho phiên làm việc.' },
+         { layer: 6, text: 'L6 (Presentation):<br>Giải mã, chuyển đổi định dạng dữ liệu.' },
+         { layer: 7, text: 'L7 (Application):<br>Cung cấp dữ liệu cho ứng dụng.' }
+     ];
+ 
+     async function runSimulation() {
+         sendBtn.disabled = true;
+         resetPacket();
+ 
+         // === Giai đoạn 1: Đóng gói (Encapsulation) ===
+         await showInfoPopup(encapsulationSteps[(0)].text);
+         let currentPos = getLayerPos('a', 7);
+         packet.style.left = `${currentPos.x}px`;
+         packet.style.top = `${currentPos.y}px`;
+         packet.style.opacity = '1';
+         packet.textContent = 'Data';
+         await highlightLayer('a', 7);
+         for (let i = 1; i < encapsulationSteps.length; i++) {
+             const step = encapsulationSteps[(i)];
+             await showInfoPopup(step.text);
+             currentPos = getLayerPos('a', step.layer);
+             packet.style.left = `${currentPos.x}px`;
+             packet.style.top = `${currentPos.y}px`;
+             if (step.unit) packet.textContent = step.unit;
+             await highlightLayer('a', step.layer);
+         }
+         await sleep(500);
+ 
+         // === Giai đoạn 2: Truyền dẫn (Physical Transmission) ===
+         packet.style.transition = 'all 0.5s ease-in';
+         packet.style.transform = 'translate(-50%, -50%) scale(0)';
+         await sleep(500);
+         const startPoint = getLayerPos('a', 1);
+         const endPoint = getLayerPos('b', 1);
+         const bitPromises = [];
+         for(let i = 0; i < 30; i++) {
+             const bit = document.createElement('div');
+             bit.className = 'bit';
+             bitsContainer.appendChild(bit);
+             bit.style.left = `${startPoint.x - 4}px`;
+             bit.style.top = `${startPoint.y - 4}px`;
+             const promise = new Promise(resolve => {
+                 setTimeout(() => {
+                     bit.style.transition = 'all 2s linear';
+                     bit.style.left = `${endPoint.x - 4}px`;
+                     bit.style.top = `${endPoint.y - 4}px`;
+                     setTimeout(() => {
+                         bit.remove();
+                         resolve();
+                     }, 2000);
+                 }, i * 80);
+             });
+             bitPromises.push(promise);
+         }
+         await Promise.all(bitPromises);
+ 
+         // === Giai đoạn 3: Mở gói (De-encapsulation) ===
+         
+         const l1Pos = getLayerPos('b', 1);
+         packet.style.transition = 'none';
+         packet.style.left = `${l1Pos.x}px`;
+         packet.style.top = `${l1Pos.y}px`;
+         packet.style.transform = 'translate(-50%, -50%) scale(0)';
+         await sleep(50);
+         
+         await showInfoPopup(deencapsulationSteps[(0)].text);
+         packet.style.transition = 'all 0.5s ease-out';
+         packet.style.opacity = '1';
+         packet.style.transform = 'translate(-50%, -50%) scale(1)';
+         packet.textContent = 'Frame';
+         await highlightLayer('b', 1);
+         
+         for (let i = 1; i < deencapsulationSteps.length; i++) {
+             const step = deencapsulationSteps[(i)];
+ 
+             let targetPos = getLayerPos('b', step.layer);
+             packet.style.left = `${targetPos.x}px`;
+             packet.style.top = `${targetPos.y}px`;
+             await sleep(800);
+ 
+             await showInfoPopup(step.text);
+             await highlightLayer('b', step.layer);
+ 
+             // THE FIX IS HERE
+             if (step.nextUnit) {
+                 packet.textContent = step.nextUnit;
+             } else if (step.layer >= 5 && step.layer <= 7) {
+                 packet.textContent = 'Data';
+             }
+         }
+ 
+         alert('Đã nhận được Email!');
+         sendBtn.disabled = false;
+     }
+ 
+     function drawConnectionLine() {
+         const start = getLayerPos('a', 1);
+         const end = getLayerPos('b', 1);
+         physicalLine.setAttribute('x1', start.x);
+         physicalLine.setAttribute('y1', start.y);
+         physicalLine.setAttribute('x2', end.x);
+         physicalLine.setAttribute('y2', end.y);
+         physicalLine.setAttribute('stroke', 'var(--l1-color)');
+     }
+ 
+     sendBtn.addEventListener('click', runSimulation);
+     window.addEventListener('resize', drawConnectionLine);
+     drawConnectionLine();
+ });
+ </script>
+ 
+ </body>
+ </html>

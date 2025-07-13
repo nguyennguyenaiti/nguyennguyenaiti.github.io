@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng: Hai Router làm quen (OSPF)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono&display=swap');
+
+        :root {
+            --bg-color: #2c3e50;
+            --router-bg: #ecf0f1;
+            --router-border: #bdc3c7;
+            --line-color: #7f8c8d;
+            --line-glow-color: #2980b9;
+            --lsdb-bg: #34495e;
+            --lsdb-text: #ecf0f1;
+            --lsdb-glow-color: #27ae60;
+            --chat-bg: rgba(26, 26, 26, 0.85);
+            --chat-text: #f1c40f;
+            --packet-hello-bg: #e67e22;
+            --font-main: 'Poppins', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font-main);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .simulation-container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .diagram-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .router-area {
+            position: relative; /* Context cho bong bóng chat */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .router {
+            position: relative;
+            width: 120px;
+            height: 80px;
+            background-color: var(--router-bg);
+            border: 3px solid var(--router-border);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            color: #34495e;
+            font-size: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .led {
+            position: absolute;
+            top: 8px;
+            width: 10px;
+            height: 10px;
+            background-color: #7f8c8d;
+            border-radius: 50%;
+            border: 1px solid #2c3e50;
+        }
+        .led.left { left: 8px; }
+        .led.right { left: 22px; }
+
+        .lsdb {
+            width: 160px;
+            height: 120px;
+            background-color: var(--lsdb-bg);
+            border: 2px solid var(--router-border);
+            border-radius: 5px;
+            padding: 10px;
+            color: var(--lsdb-text);
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.5s ease;
+        }
+        .lsdb.glowing {
+            box-shadow: 0 0 15px 5px var(--lsdb-glow-color);
+            border-color: var(--lsdb-glow-color);
+        }
+        .lsdb-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            border-bottom: 1px solid var(--router-border);
+            padding-bottom: 5px;
+        }
+        .lsdb-content {
+            text-align: left;
+            padding-left: 10px;
+        }
+        .lsdb-entry {
+            transition: all 0.5s ease;
+        }
+        .lsdb-entry.newly-added {
+            animation: fadeIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .svg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        #connection-line {
+            stroke: var(--line-color);
+            stroke-width: 6;
+            transition: all 0.5s ease;
+        }
+        #connection-line.glowing {
+            stroke: var(--line-glow-color);
+            filter: drop-shadow(0 0 8px var(--line-glow-color));
+        }
+        
+        .packet {
+            position: absolute;
+            z-index: 10;
+            font-size: 30px;
+            transition: all 2.5s cubic-bezier(0.4, 0, 0.6, 1);
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        .chat-bubble {
+            position: absolute;
+            /* Thay đổi vị trí để gần router hơn */
+            top: -35px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 240px;
+            background-color: var(--chat-bg);
+            color: var(--chat-text);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            opacity: 0;
+            transform-origin: bottom center;
+            transition: all 0.4s ease-out;
+            visibility: hidden;
+            z-index: 20;
+        }
+        .chat-bubble.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-10px) scale(1);
+            visibility: visible;
+        }
+        .chat-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 10px solid transparent;
+            border-top-color: var(--chat-bg);
+        }
+        
+        #state-indicator {
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 8px 25px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            display: inline-block;
+            transition: all 0.3s ease;
+            border: 2px solid #95a5a6;
+        }
+        .state-highlight {
+            color: var(--chat-text);
+            font-family: var(--font-mono);
+        }
+
+        .button {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: 600;
+            font-family: var(--font-main);
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            background-color: #3498db;
+            color: white;
+            box-shadow: 0 4px 0 #2980b9;
+        }
+        .button:disabled {
+            background-color: #95a5a6;
+            box-shadow: 0 4px 0 #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s;
+            z-index: 100;
+        }
+        .popup-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #final-message-box {
+            background: var(--bg-color);
+            padding: 30px 40px;
+            border-radius: 10px;
+            border: 2px solid var(--chat-text);
+        }
+        #final-message-box h2 {
+             color: var(--chat-text);
+             margin-top: 0;
+        }
+        
+        #command-output-window {
+            width: 700px;
+            background-color: #1e272e;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: var(--font-mono);
+            border: 2px solid var(--router-border);
+        }
+        #command-output-window pre {
+            white-space: pre-wrap;
+            text-align: left;
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        /* --- PHẦN GIẢNG GIẢI MỚI --- */
+        .explanation-box {
+            max-width: 900px;
+            width: 100%;
+            margin-top: 40px;
+            background-color: var(--router-bg);
+            color: #2c3e50;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-align: left;
+        }
+        .explanation-box h3 {
+            margin-top: 0;
+            text-align: center;
+            color: var(--line-glow-color);
+        }
+        .explanation-box ul {
+            list-style: none;
+            padding: 0;
+        }
+        .explanation-box li {
+            padding: 10px 0;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        .explanation-box li:last-child {
+            border-bottom: none;
+        }
+        .explanation-box li::before {
+            content: '✅';
+            margin-right: 10px;
+            color: var(--lsdb-glow-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="simulation-container">
+    <h1>Mô phỏng: Hai Router làm quen</h1>
+    <div class="diagram-container" id="diagram">
+        <svg class="svg-canvas" id="svg-canvas">
+            <line id="connection-line" x1="15%" y1="50%" x2="85%" y2="50%" />
+        </svg>
+
+        <div class="router-area">
+            <div class="chat-bubble" id="chat-r1"></div>
+            <div class="router" id="r1">R1</div>
+            <div class="lsdb" id="lsdb-r1">
+                <div class="lsdb-title">Cơ sở dữ liệu (LSDB)</div>
+                <div class="lsdb-content" id="lsdb-content-r1">
+                    <div class="lsdb-entry" id="lsdb-entry-r1-y">Mạng Y</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="router-area">
+             <div class="chat-bubble" id="chat-r2"></div>
+            <div class="router" id="r2">R2</div>
+            <div class="lsdb" id="lsdb-r2">
+                 <div class="lsdb-title">Cơ sở dữ liệu (LSDB)</div>
+                 <div class="lsdb-content" id="lsdb-content-r2">
+                    <div class="lsdb-entry" id="lsdb-entry-r2-x">Mạng X</div>
+                 </div>
+            </div>
+        </div>
+
+        <div class="packet" id="packet"></div>
+    </div>
+
+    <div id="state-indicator">TRẠNG THÁI: <span class="state-highlight">DOWN</span></div>
+    
+    <div class="controls">
+        <button id="start-btn" class="button">Bắt đầu Quá trình</button>
+    </div>
+</div>
+
+<div class="popup-overlay" id="final-message-overlay">
+    <div id="final-message-box">
+        <h2>Quá trình đồng bộ hoàn tất!</h2>
+        <p>Hai router đã là láng giềng thân thiết.</p>
+        <button id="check-neighbor-btn" class="button">Xem 'show ip ospf neighbor'</button>
+    </div>
+</div>
+
+<div class="popup-overlay" id="command-output-overlay">
+    <div id="command-output-window">
+        <h3>R1#show ip ospf neighbor</h3>
+        <pre id="command-output-content"></pre>
+        <button id="close-command-btn" class="button" style="margin-top:20px;">Đóng</button>
+    </div>
+</div>
+
+<div class="explanation-box">
+    <h3>Điều kiện để hai Router OSPF "kết bạn" (Trở thành Neighbor)</h3>
+    <ul>
+        <li>Hai router phải có kết nối IP với nhau (ví dụ: ping thành công).</li>
+        <li>Phải thuộc cùng một **Area ID**.</li>
+        <li>Bộ đếm thời gian **Hello** và **Dead** phải giống hệt nhau.</li>
+        <li>Phải cùng một lớp mạng và **Subnet Mask**.</li>
+        <li>Phải có cùng kiểu và mật khẩu **xác thực** (Authentication) nếu được cấu hình.</li>
+        <li>Giá trị **MTU** (Maximum Transmission Unit) của hai cổng kết nối phải khớp nhau.</li>
+    </ul>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // === DOM Elements ===
+    const startBtn = document.getElementById('start-btn');
+    const r1 = document.getElementById('r1');
+    const r2 = document.getElementById('r2');
+    const packetEl = document.getElementById('packet');
+    const chatR1 = document.getElementById('chat-r1');
+    const chatR2 = document.getElementById('chat-r2');
+    const line = document.getElementById('connection-line');
+    const lsdbR1 = document.getElementById('lsdb-r1');
+    const lsdbR2 = document.getElementById('lsdb-r2');
+    const lsdbContentR1 = document.getElementById('lsdb-content-r1');
+    const lsdbContentR2 = document.getElementById('lsdb-content-r2');
+    const stateIndicator = document.getElementById('state-indicator');
+    const finalMessageOverlay = document.getElementById('final-message-overlay');
+    const checkNeighborBtn = document.getElementById('check-neighbor-btn');
+    const commandOutputOverlay = document.getElementById('command-output-overlay');
+    const commandOutputContent = document.getElementById('command-output-content');
+    const closeCommandBtn = document.getElementById('close-command-btn');
+
+    // === State ===
+    let isSimulating = false;
+
+    // === Utility Functions ===
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    const getElementCenter = (el) => {
+        const rect = el.getBoundingClientRect();
+        const diagramRect = document.getElementById('diagram').getBoundingClientRect();
+        return {
+            x: rect.left - diagramRect.left + rect.width / 2,
+            y: rect.top - diagramRect.top + rect.height / 2
+        };
+    };
+    
+    function updateState(newState) {
+        stateIndicator.innerHTML = `TRẠNG THÁI: <span class="state-highlight">${newState}</span>`;
+        stateIndicator.style.transform = 'scale(1.1)';
+        stateIndicator.style.borderColor = 'var(--chat-text)';
+        setTimeout(() => {
+            stateIndicator.style.transform = 'scale(1)';
+            stateIndicator.style.borderColor = '#95a5a6';
+        }, 300);
+    }
+
+    async function showChat(routerId, text, duration = 3000) {
+        const chatEl = routerId === 'r1' ? chatR1 : chatR2;
+        chatEl.textContent = text;
+        chatEl.classList.add('visible');
+        await sleep(duration);
+        chatEl.classList.remove('visible');
+        await sleep(400); 
+    }
+
+    async function movePacket(startEl, endEl, icon) {
+        const startPos = getElementCenter(startEl);
+        const endPos = getElementCenter(endEl);
+
+        packetEl.innerHTML = icon;
+        
+        packetEl.style.transition = 'none';
+        packetEl.style.left = `${startPos.x - 15}px`;
+        packetEl.style.top = `${startPos.y - 15}px`;
+        packetEl.style.opacity = 1;
+        packetEl.style.transform = 'scale(1)';
+
+        await sleep(50); 
+
+        packetEl.style.transition = 'all 2.5s cubic-bezier(0.4, 0, 0.6, 1)';
+        packetEl.style.left = `${endPos.x - 15}px`;
+        packetEl.style.top = `${endPos.y - 15}px`;
+        
+        await sleep(2500);
+        packetEl.style.opacity = 0;
+        packetEl.style.transform = 'scale(0)';
+    }
+
+    function addLsdbEntry(lsdbContentEl, text) {
+        const newEntry = document.createElement('div');
+        newEntry.className = 'lsdb-entry newly-added';
+        newEntry.textContent = text;
+        lsdbContentEl.appendChild(newEntry);
+    }
+    
+    function resetUI() {
+        line.classList.remove('glowing');
+        lsdbR1.classList.remove('glowing');
+        lsdbR2.classList.remove('glowing');
+        lsdbContentR1.innerHTML = '<div class="lsdb-entry" id="lsdb-entry-r1-y">Mạng Y</div>';
+        lsdbContentR2.innerHTML = '<div class="lsdb-entry" id="lsdb-entry-r2-x">Mạng X</div>';
+        finalMessageOverlay.classList.remove('visible');
+        commandOutputOverlay.classList.remove('visible');
+        updateState('DOWN');
+    }
+
+    // === Main Simulation Logic ===
+    async function startSimulation() {
+        if (isSimulating) return;
+        isSimulating = true;
+        startBtn.disabled = true;
+        resetUI();
+
+        // --- Giai đoạn 1 & 2: Chào hỏi và Kết nối hai chiều ---
+        await showChat('r1', 'Xin chào! Tôi là R1.');
+        await movePacket(r1, r2, '<div style="color:white; background:var(--packet-hello-bg); padding: 2px 8px; border-radius:5px; font-size:14px; font-weight:bold;">HELLO</div>');
+        updateState('INIT');
+        await showChat('r2', 'Chào R1! Tôi là R2. Tôi đã thấy anh.');
+        await showChat('r2', 'Tôi gửi lại lời chào của tôi đây!');
+        await movePacket(r2, r1, '<div style="color:white; background:var(--packet-hello-bg); padding: 2px 8px; border-radius:5px; font-size:14px; font-weight:bold;">HELLO</div>');
+        updateState('2-WAY');
+        await showChat('r1', 'Tuyệt vời! Kết nối hai chiều thành công.');
+        line.classList.add('glowing');
+        await sleep(500);
+
+        // --- Giai đoạn 3: So sánh "Sổ tay" ---
+        await showChat('r1', "Ok, hãy so sánh 'sổ tay' (LSDB) của chúng ta.");
+        updateState('EXCHANGE');
+        await movePacket(r1, r2, '📖');
+        await showChat('r2', "Đã nhận. Tôi thấy anh có 'Mạng Y' tôi không có, và tôi có 'Mạng X' anh không có.");
+        
+        // --- Giai đoạn 4: Trao đổi thông tin hai chiều ---
+        updateState('LOADING');
+        await showChat('r1', "Đúng vậy. Cho tôi thông tin về 'Mạng X' trước nhé.");
+        await movePacket(r1, r2, '❓');
+        await showChat('r2', "OK. Đây là thông tin chi tiết về 'Mạng X'.");
+        await movePacket(r2, r1, '📄');
+        addLsdbEntry(lsdbContentR1, 'Mạng X');
+        await showChat('r1', "Đã nhận 'Mạng X'. Cảm ơn!");
+
+        await showChat('r2', "Tốt. Giờ đến lượt tôi, gửi tôi chi tiết về 'Mạng Y' đi.");
+        await movePacket(r2, r1, '❓');
+        await showChat('r1', "Đây là 'Mạng Y' cho anh.");
+        await movePacket(r1, r2, '📄');
+        addLsdbEntry(lsdbContentR2, 'Mạng Y');
+        await showChat('r2', "Đã cập nhật 'Mạng Y'. Cảm ơn anh!");
+
+        // --- Giai đoạn 5: Trở thành Đối tác (LOADING -> FULL) ---
+        updateState('FULL');
+        await Promise.all([
+            showChat('r1', "'Sổ tay' của chúng ta giờ đã hoàn toàn giống nhau.", 3000),
+            showChat('r2', "'Sổ tay' của chúng ta giờ đã hoàn toàn giống nhau.", 3000)
+        ]);
+        
+        lsdbR1.classList.add('glowing');
+        lsdbR2.classList.add('glowing');
+        
+        finalMessageOverlay.classList.add('visible');
+    }
+
+    // === Event Listeners ===
+    startBtn.addEventListener('click', startSimulation);
+
+    checkNeighborBtn.addEventListener('click', () => {
+        finalMessageOverlay.classList.remove('visible');
+        
+        const output = `R1#show ip ospf neighbor
+
+Neighbor ID     Pri   State           Dead Time   Address         Interface
+2.2.2.2           1   FULL/BDR        00:00:38    10.1.1.2        GigabitEthernet0/0`;
+        commandOutputContent.textContent = output;
+        commandOutputOverlay.classList.add('visible');
+    });
+    
+    function closeAndReset() {
+        commandOutputOverlay.classList.remove('visible');
+        startBtn.textContent = "Bắt đầu lại";
+        isSimulating = false;
+        startBtn.disabled = false;
+        resetUI();
+    }
+
+    closeCommandBtn.addEventListener('click', closeAndReset);
+    commandOutputOverlay.addEventListener('click', (e) => {
+        if(e.target === commandOutputOverlay) {
+             closeAndReset();
+        }
+    });
+
+    // Initial call
+    resetUI();
+});
+</script>
+
+</body>
+</html>

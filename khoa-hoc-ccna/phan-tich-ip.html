@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng: Phân tích địa chỉ IP</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #1a1a2e;
+            --text-color: #e0e0e0;
+            --header-color: #f1c40f;
+            --chat-bg: rgba(0, 0, 0, 0.75);
+            --chat-text: #f1c40f;
+            --network-color: #3498db;
+            --host-color: #2ecc71;
+            --label-bg: rgba(255, 255, 255, 0.1);
+            --font-main: 'Poppins', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .simulation-container {
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-family: var(--font-mono);
+            font-size: 2.5em;
+            color: var(--header-color);
+            margin-bottom: 20px;
+        }
+
+        #simulation-area {
+            position: relative;
+            min-height: 250px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 1.5em;
+        }
+        
+        #chat-bubble {
+            background: var(--chat-bg);
+            color: var(--chat-text);
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-size: 1.1em;
+            font-weight: 600;
+            max-width: 700px;
+            min-height: 60px;
+            border: 2px solid var(--chat-text);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            z-index: 100;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease-in-out;
+            /* Sửa lại căn chỉnh */
+            margin: 20px auto; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #chat-bubble.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .analysis-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; } to { opacity: 1; }
+        }
+
+        .binary-string {
+            letter-spacing: 2px;
+            word-break: break-all;
+        }
+        .network-part { color: var(--network-color); }
+        .host-part { color: var(--host-color); }
+
+        #summary-table {
+            display: none;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--header-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+            width: 600px;
+        }
+        #summary-table div {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            padding: 10px 0;
+            font-size: 1.1em;
+        }
+        #summary-table span { font-weight: 700; color: var(--header-color); }
+
+        .controls { margin-top: 30px; }
+        .button {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--header-color);
+            color: #1a1a2e;
+            margin: 0 5px;
+        }
+        .button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+        #pause-btn {
+            background-color: #e67e22;
+            color: black;
+        }
+        #pause-btn.paused {
+            background-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+
+<div class="simulation-container">
+    <header><h1>192.168.1.0/24</h1></header>
+    <main id="simulation-area"></main>
+    <div id="chat-bubble">Bắt đầu bằng cách nhấn nút "Phân tích"</div>
+    <div class="controls">
+        <button id="start-btn" class="button">Bắt đầu phân tích</button>
+        <button id="pause-btn" class="button" disabled>Tạm dừng</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const chatBubble = document.getElementById('chat-bubble');
+    const simulationArea = document.getElementById('simulation-area');
+
+    // === PAUSE/RESUME LOGIC (REWRITTEN) ===
+    let simState = 'stopped'; // 'stopped', 'running', 'paused'
+    let pauseResolver = null;
+
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function pausableWait(duration) {
+        const tickDuration = 50; // Check state every 50ms for responsiveness
+        let elapsed = 0;
+
+        while (elapsed < duration) {
+            if (simState === 'paused') {
+                // Create a promise that waits for the resume signal
+                await new Promise(resolve => { pauseResolver = resolve; });
+            }
+            // If the simulation was stopped while paused, exit immediately
+            if (simState === 'stopped') return;
+
+            await sleep(tickDuration);
+            elapsed += tickDuration;
+        }
+    }
+
+    function togglePause() {
+        if (simState === 'running') {
+            simState = 'paused';
+            pauseBtn.textContent = 'Tiếp tục';
+            pauseBtn.classList.add('paused');
+        } else if (simState === 'paused') {
+            simState = 'running';
+            pauseBtn.textContent = 'Tạm dừng';
+            pauseBtn.classList.remove('paused');
+            if (pauseResolver) {
+                pauseResolver(); // This resolves the promise in pausableWait
+                pauseResolver = null;
+            }
+        }
+    }
+    pauseBtn.addEventListener('click', togglePause);
+    
+    // === SIMULATION LOGIC ===
+    const ipParts = {
+        dec: [192, 168, 1, 0],
+        bin: ["11000000", "10101000", "00000001", "00000000"]
+    };
+    const fullBinaryIp = ipParts.bin.join('');
+    const maskBinary = '1'.repeat(24) + '0'.repeat(8);
+
+    function clearSimulationArea() {
+        simulationArea.innerHTML = '';
+    }
+
+    async function showChat(text, duration = 2500) {
+        chatBubble.classList.add('visible');
+        chatBubble.textContent = text;
+        await pausableWait(duration);
+        if (simState === 'stopped') {
+            chatBubble.classList.remove('visible');
+            return;
+        }
+        chatBubble.classList.remove('visible');
+        await pausableWait(500);
+    }
+    
+    async function typeText(element, text, delay = 25) {
+        element.innerHTML = '';
+        for (let i = 0; i < text.length; i++) {
+            if (simState === 'stopped') return;
+            element.innerHTML += text[i];
+            await pausableWait(delay);
+        }
+    }
+
+    // --- Main Simulation Function ---
+    async function startSimulation() {
+        // --- Setup ---
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        pauseBtn.textContent = 'Tạm dừng';
+        pauseBtn.classList.remove('paused');
+        simState = 'running';
+        clearSimulationArea();
+
+        // --- Scene 1: Intro ---
+        await showChat("Đầu tiên, hãy đổi địa chỉ IP 192.168.1.0 sang dạng nhị phân 32-bit.");
+        if (simState === 'stopped') return;
+
+        // --- Scene 2: IP to Binary ---
+        const step1 = document.createElement('div');
+        step1.className = 'analysis-display';
+        step1.innerHTML = `<div id="ip-display" class="binary-string"></div>`;
+        simulationArea.appendChild(step1);
+        const ipDisplay = document.getElementById('ip-display');
+        await typeText(ipDisplay, ipParts.bin.join('.'), 50);
+        if (simState === 'stopped') return;
+        
+        // --- Scene 3: Explain /24 and Derive Mask ---
+        await showChat("Con số /24 có nghĩa là Subnet Mask sẽ có 24 bit 1 ở bên trái, theo sau là các bit 0.");
+        if (simState === 'stopped') return;
+        
+        step1.innerHTML += `
+            <div style="font-size: 0.8em; margin-top:15px;">Subnet Mask nhị phân:</div>
+            <div id="mask-display" class="binary-string"></div>
+            <div id="mask-decimal" style="opacity:0; transition: opacity 1s; margin-top:10px;"></div>
+        `;
+        const maskDisplay = document.getElementById('mask-display');
+        const maskDecimal = document.getElementById('mask-decimal');
+        await typeText(maskDisplay, maskBinary.match(/.{1,8}/g).join('.'), 50);
+        if (simState === 'stopped') return;
+        
+        await showChat("Đổi sang dạng thập phân, ta sẽ có Subnet Mask tương ứng.");
+        if (simState === 'stopped') return;
+        maskDecimal.innerHTML = `<span>→ 255.255.255.0</span>`;
+        maskDecimal.style.opacity = 1;
+        await pausableWait(2000);
+        if (simState === 'stopped') return;
+
+        // --- Scene 4: Apply Mask ---
+        await showChat("Subnet Mask này hoạt động như một 'tấm mặt nạ' để xác định phần Mạng và Host của địa chỉ IP.");
+        if (simState === 'stopped') return;
+        ipDisplay.innerHTML = `<span class="network-part">${fullBinaryIp.substring(0,24)}</span><span class="host-part">${fullBinaryIp.substring(24)}</span>`;
+        maskDisplay.innerHTML = `<span class="network-part">${maskBinary.substring(0,24)}</span><span class="host-part">${maskBinary.substring(24)}</span>`;
+
+        await showChat("Những bit của IP tương ứng với bit 1 của Mask là **Phần Mạng (Cố định)**.");
+        if (simState === 'stopped') return;
+        await showChat("Những bit tương ứng với bit 0 của Mask là **Phần Host (Biến động)**.");
+        if (simState === 'stopped') return;
+        
+        // --- Scene 5: Derive Addresses ---
+        await showChat("Phần Host biến động này sẽ tạo ra dải địa chỉ của mạng.");
+        if (simState === 'stopped') return;
+        clearSimulationArea();
+        const step5 = document.createElement('div');
+        step5.className = 'analysis-display';
+        step5.innerHTML = `
+            <div id="net-addr" style="opacity:0;"></div>
+            <div id="bcast-addr" style="opacity:0; margin-top:20px;"></div>
+        `;
+        simulationArea.appendChild(step5);
+        
+        const netAddrEl = document.getElementById('net-addr');
+        netAddrEl.innerHTML = `<div>Địa chỉ Mạng (Host = toàn 0):</div>
+            <div class="binary-string"><span class="network-part">${fullBinaryIp.substring(0,24)}</span><span class="host-part">${'0'.repeat(8)}</span></div>
+            <div>→ 192.168.1.0</div>`;
+        netAddrEl.style.opacity = 1;
+        await pausableWait(500);
+        await showChat("Khi tất cả các bit host là 0, ta có **Địa chỉ Mạng**.", 3500);
+        if (simState === 'stopped') return;
+
+        const bcastAddrEl = document.getElementById('bcast-addr');
+        bcastAddrEl.innerHTML = `<div>Địa chỉ Broadcast (Host = toàn 1):</div>
+            <div class="binary-string"><span class="network-part">${fullBinaryIp.substring(0,24)}</span><span class="host-part">${'1'.repeat(8)}</span></div>
+            <div>→ 192.168.1.255</div>`;
+        bcastAddrEl.style.opacity = 1;
+        await pausableWait(500);
+        await showChat("Khi tất cả các bit host là 1, ta có **Địa chỉ Broadcast**.", 3500);
+        if (simState === 'stopped') return;
+
+        // --- Scene 6: Summary ---
+        await showChat("Cuối cùng, đây là bảng tổng kết cho địa chỉ này.");
+        if (simState === 'stopped') return;
+        clearSimulationArea();
+        const summaryTable = document.createElement('div');
+        summaryTable.id = 'summary-table';
+        summaryTable.style.display = 'block';
+        summaryTable.innerHTML = `<div><span>Địa chỉ IP/Prefix:</span> <span>192.168.1.0/24</span></div>
+             <div><span>Subnet Mask:</span> <span>255.255.255.0</span></div>
+             <div><span>Địa chỉ Mạng:</span> <span>192.168.1.0</span></div>
+             <div><span>Địa chỉ Broadcast:</span> <span>192.168.1.255</span></div>
+             <hr>
+             <div><span>Dải IP hợp lệ:</span> <span style="color:var(--host-color)">192.168.1.1 - 192.168.1.254</span></div>`;
+        simulationArea.appendChild(summaryTable);
+        chatBubble.classList.remove('visible');
+        
+        finishSimulation();
+    }
+
+    function finishSimulation() {
+        startBtn.textContent = 'Phân tích lại';
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        pauseBtn.textContent = 'Tạm dừng';
+        pauseBtn.classList.remove('paused');
+        simState = 'stopped';
+    }
+
+    startBtn.addEventListener('click', () => {
+        if(simState === 'stopped'){
+            startSimulation();
+        } else {
+            // Act as a reset button
+            simState = 'stopped';
+            if (pauseResolver) {
+                pauseResolver();
+                pauseResolver = null;
+            }
+            finishSimulation();
+            clearSimulationArea();
+            chatBubble.textContent = 'Bắt đầu bằng cách nhấn nút "Phân tích"';
+            chatBubble.classList.remove('visible');
+        }
+    });
+});
+</script>
+
+</body>
+</html>

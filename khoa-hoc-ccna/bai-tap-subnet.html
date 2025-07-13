@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng: Bài tập chia Subnet & Gateway</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
+
+        :root {
+            --bg-color: #ecf0f1;
+            --text-color: #2c3e50;
+            --device-bg: #e9ecef;
+            --device-border: #bdc3c7;
+            --line-color: #e74c3c; /* Đổi màu dây thành màu hồng như hình vẽ */
+            --placeholder-bg: rgba(52, 152, 219, 0.1);
+            --placeholder-border: #3498db;
+            --subnet-bg: #9b59b6;
+            --success-color: #2ecc71;
+            --fail-color: #e74c3c;
+            --router-color: #3498db;
+            --router-border: #2980b9;
+            --switch-color: #f1c40f;
+            --switch-border: #f39c12;
+            --font-main: 'Poppins', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .simulation-container {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        #diagram-area {
+            flex: 2;
+            position: relative;
+            height: 650px;
+            background-color: white;
+            border-radius: 15px;
+            border: 1px solid #dcdcdc;
+        }
+
+        .device {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .device-icon {
+            width: 60px; height: 60px;
+            background-color: var(--device-bg);
+            border: 2px solid var(--device-border);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            margin-bottom: 5px;
+            color: #34495e;
+        }
+
+        #router .device-icon {
+            background-color: var(--router-color);
+            border-color: var(--router-border);
+            color: white;
+        }
+        .switch .device-icon {
+            background-color: var(--switch-color);
+            border-color: var(--switch-border);
+            color: white;
+        }
+
+        #router { top: 20px; left: 50%; transform: translateX(-50%); }
+        #switch1 { top: 250px; left: 15%; transform: translateX(-50%); }
+        #switch2 { top: 250px; left: 50%; transform: translateX(-50%); }
+        #switch3 { top: 250px; left: 85%; transform: translateX(-50%); }
+
+        .department-zone {
+            position: absolute;
+            border: 2px dashed #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        #zone1 { top: 340px; left: 5%; width: 25%; height: 280px; }
+        #zone2 { top: 340px; left: 37.5%; width: 25%; height: 280px; }
+        #zone3 { top: 340px; left: 70%; width: 25%; height: 280px; }
+
+        .pc {
+            position: static;
+            transform: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .pc-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .zone-title {
+            position: static;
+            transform: none;
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 1.1em;
+            color: var(--text-color);
+        }
+
+        .subnet-placeholder {
+            width: 90%;
+            height: 50px;
+            background-color: var(--placeholder-bg);
+            border: 2px dashed var(--placeholder-border);
+            border-radius: 8px;
+            margin: 0 auto;
+            margin-top: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: var(--font-mono);
+            color: #7f8c8d;
+            transition: all 0.2s;
+        }
+        .subnet-placeholder.over { background-color: rgba(46, 204, 113, 0.2); border-color: #2ecc71; }
+        .subnet-placeholder.filled { border-style: solid; background-color: var(--subnet-bg); color: white; font-weight: bold; }
+
+        .gateway-input-container {
+            position: absolute;
+            width: 140px;
+        }
+        #gw-cont-1 { top: 120px; left: 15%; transform: translateX(-50%);}
+        #gw-cont-2 { top: 120px; left: 50%; transform: translateX(-50%);}
+        #gw-cont-3 { top: 120px; left: 85%; transform: translateX(-50%);}
+        .gateway-input-container label { font-size: 11px; font-weight: bold; }
+        .gateway-input {
+            width: 130px; padding: 5px;
+            font-size: 13px; font-family: var(--font-mono);
+            border: 2px solid #ccc; border-radius: 5px; text-align: center;
+        }
+        .gateway-input.correct { border-color: var(--success-color); }
+        .gateway-input.wrong { border-color: var(--fail-color); }
+
+        #controls-area {
+            flex: 1; padding: 20px; background-color: white;
+            border-radius: 15px; border: 1px solid #dcdcdc;
+        }
+        .control-group { margin-bottom: 25px; }
+        .control-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+        .control-group input[type="text"] {
+            width: 100%; padding: 10px; font-size: 1.2em;
+            font-family: var(--font-mono); border: 1px solid #ccc;
+            border-radius: 5px; box-sizing: border-box;
+        }
+        .control-group input[type="range"] { width: 100%; }
+        #slider-value {
+            font-size: 1.5em; font-weight: bold;
+            font-family: var(--font-mono); color: var(--placeholder-border);
+        }
+
+        #subnet-pool {
+            margin-top: 20px; padding: 10px; border: 1px solid #eee;
+            min-height: 200px; border-radius: 5px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .subnet-item {
+            padding: 15px; background-color: var(--subnet-bg); color: white;
+            border-radius: 5px; font-family: var(--font-mono);
+            cursor: grab; transition: all 0.2s; text-align: center;
+        }
+        .subnet-item.dragging { opacity: 0.5; transform: scale(1.05); }
+
+        .popup {
+            position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%); padding: 15px 25px;
+            border-radius: 8px; color: white;
+            z-index: 1000; opacity: 0; visibility: hidden;
+            transition: all 0.5s;
+        }
+        .popup.show { opacity: 1; visibility: visible; }
+        .popup.error { background-color: var(--fail-color); }
+        .popup.success { background-color: var(--success-color); }
+
+    </style>
+</head>
+<body>
+
+<div id="popup-result" class="popup"></div>
+
+<div class="simulation-container">
+    <div id="diagram-area">
+        <svg id="svg-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:-1;"></svg>
+
+        <div id="router" class="device"><div class="device-icon">🖧</div>Router</div>
+
+        <div class="gateway-input-container" id="gw-cont-1">
+            <label for="gw-input-1">GW Kế toán</label>
+            <input type="text" class="gateway-input" id="gw-input-1" placeholder="x.x.x.x">
+        </div>
+         <div class="gateway-input-container" id="gw-cont-2">
+            <label for="gw-input-2">GW Marketing</label>
+            <input type="text" class="gateway-input" id="gw-input-2" placeholder="x.x.x.x">
+        </div>
+         <div class="gateway-input-container" id="gw-cont-3">
+            <label for="gw-input-3">GW IT</label>
+            <input type="text" class="gateway-input" id="gw-input-3" placeholder="x.x.x.x">
+        </div>
+
+        <div id="switch1" class="device switch"><div class="device-icon">↔</div>Switch</div>
+        <div id="switch2" class="device switch"><div class="device-icon">↔</div>Switch</div>
+        <div id="switch3" class="device switch"><div class="device-icon">↔</div>Switch</div>
+
+        <div id="zone1" class="department-zone">
+            <div class="zone-title">Kế toán</div>
+            <div class="pc-container">
+                <div id="pc1a" class="device pc"><div class="device-icon">💻</div>PC KT 1</div>
+                <div id="pc1b" class="device pc"><div class="device-icon">💻</div>PC KT 2</div>
+            </div>
+            <div class="subnet-placeholder" data-zone="1">Kéo subnet vào đây</div>
+        </div>
+
+        <div id="zone2" class="department-zone">
+            <div class="zone-title">Marketing</div>
+            <div id="pc2a" class="device pc"><div class="device-icon">💻</div>PC MKT 1</div>
+            <div class="subnet-placeholder" data-zone="2">Kéo subnet vào đây</div>
+        </div>
+
+        <div id="zone3" class="department-zone">
+            <div class="zone-title">IT</div>
+            <div id="pc3a" class="device pc"><div class="device-icon">💻</div>PC IT 1</div>
+            <div class="subnet-placeholder" data-zone="3">Kéo subnet vào đây</div>
+        </div>
+    </div>
+
+    <div id="controls-area">
+        <h2>Bài tập chia Subnet</h2>
+        <div class="control-group">
+            <label for="base-ip">Nhập mạng gốc:</label>
+            <input type="text" id="base-ip" value="192.168.1.0/24">
+        </div>
+        <div class="control-group">
+            <label for="subnet-slider">Chia thành Subnet: <span id="slider-value">/24</span></label>
+            <input type="range" id="subnet-slider" min="24" max="30" value="24">
+        </div>
+
+        <hr>
+
+        <h3>Các Subnet con:</h3>
+        <div id="subnet-pool"></div>
+
+        <button id="check-btn" style="width:100%; padding: 15px; font-size: 1.2em; background-color: var(--success-color); color:white; border:none; border-radius:5px; cursor:pointer; margin-top:20px;">Kiểm tra cấu hình</button>
+    </div>
+</div>
+
+<script>
+window.onload = () => {
+    const baseIpInput = document.getElementById('base-ip');
+    const slider = document.getElementById('subnet-slider');
+    const sliderValue = document.getElementById('slider-value');
+    const subnetPool = document.getElementById('subnet-pool');
+    const allPlaceholders = document.querySelectorAll('.subnet-placeholder');
+    const checkBtn = document.getElementById('check-btn');
+    const popup = document.getElementById('popup-result');
+
+    function ipToLong(ip) {
+        return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+    }
+
+    function calculateSubnets(baseIpStr) {
+        try {
+            const [networkAddr, basePrefixStr] = baseIpStr.split('/');
+            const basePrefix = parseInt(basePrefixStr, 10);
+            const newPrefix = parseInt(slider.value, 10);
+            if (isNaN(basePrefix) || isNaN(newPrefix) || newPrefix < basePrefix || newPrefix > 30) return [];
+            const networkLong = ipToLong(networkAddr);
+            const numSubnets = Math.pow(2, newPrefix - basePrefix);
+            const subnetSize = Math.pow(2, 32 - newPrefix);
+            const subnets = [];
+            for (let i = 0; i < numSubnets; i++) {
+                const subnetStartLong = networkLong + (i * subnetSize);
+                const longToIp = long => [long >>> 24, (long >> 16) & 255, (long >> 8) & 255, long & 255].join('.');
+                subnets.push(`${longToIp(subnetStartLong)}/${newPrefix}`);
+            }
+            return subnets;
+        } catch (e) { return []; }
+    }
+
+    function isGatewayInSubnet(gatewayIpStr, subnetCidr) {
+        try {
+            const [subnetAddr, prefixStr] = subnetCidr.split('/');
+            const prefix = parseInt(prefixStr, 10);
+            if (prefix >= 31) return false;
+            const gatewayLong = ipToLong(gatewayIpStr);
+            const networkLong = ipToLong(subnetAddr);
+            const subnetSize = Math.pow(2, 32 - prefix);
+            const firstUsableIpLong = networkLong + 1;
+            const lastUsableIpLong = networkLong + subnetSize - 2;
+            return (gatewayLong >= firstUsableIpLong) && (gatewayLong <= lastUsableIpLong);
+        } catch (e) { return false; }
+    }
+
+    function updateUI() {
+        const newPrefix = slider.value;
+        sliderValue.textContent = `/${newPrefix}`;
+        const subnets = calculateSubnets(baseIpInput.value);
+        subnetPool.innerHTML = '';
+        if (subnets.length > 0 && subnets.length < 128) {
+            subnets.forEach(subnet => {
+                const subnetEl = document.createElement('div');
+                subnetEl.className = 'subnet-item';
+                subnetEl.textContent = subnet;
+                subnetEl.draggable = true;
+                subnetPool.appendChild(subnetEl);
+                addDragEvents(subnetEl);
+            });
+        } else if (subnets.length >= 128) {
+             subnetPool.innerHTML = `<p style="color: #7f8c8d;">Quá nhiều subnet để hiển thị.</p>`;
+        } else {
+             subnetPool.innerHTML = `<p style="color: #7f8c8d;">Dữ liệu không hợp lệ.</p>`;
+        }
+    }
+
+    function addDragEvents(item) {
+        item.addEventListener('dragstart', () => item.classList.add('dragging'));
+        item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    }
+
+    allPlaceholders.forEach(placeholder => {
+        placeholder.addEventListener('dragover', e => { e.preventDefault(); placeholder.classList.add('over'); });
+        placeholder.addEventListener('dragleave', () => placeholder.classList.remove('over'));
+        placeholder.addEventListener('drop', e => {
+            e.preventDefault();
+            placeholder.classList.remove('over');
+            const draggingItem = document.querySelector('.subnet-item.dragging');
+            if (draggingItem) {
+                placeholder.textContent = draggingItem.textContent;
+                placeholder.classList.add('filled');
+            }
+        });
+    });
+
+    // === HÀM VẼ DÂY NỐI ĐÃ SỬA LẠI ===
+    function drawLines() {
+        const svg = document.getElementById('svg-canvas');
+        svg.innerHTML = '';
+        const diagramArea = document.getElementById('diagram-area');
+        if (!diagramArea) return;
+        const containerRect = diagramArea.getBoundingClientRect();
+        const positions = {};
+
+        // Lấy toạ độ của các phần tử
+        const allDeviceIds = [
+            'router', 'switch1', 'switch2', 'switch3', 
+            'pc1a', 'pc1b', 'pc2a', 'pc3a'
+        ];
+
+        allDeviceIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const rect = el.getBoundingClientRect();
+                positions[id] = {
+                    centerX: rect.left - containerRect.left + rect.width / 2,
+                    topY: rect.top - containerRect.top,
+                    bottomY: rect.top - containerRect.top + rect.height,
+                };
+            }
+        });
+
+        const createLine = (startX, startY, endX, endY) => {
+            if (isNaN(startX) || isNaN(startY) || isNaN(endX) || isNaN(endY)) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', startX); line.setAttribute('y1', startY);
+            line.setAttribute('x2', endX); line.setAttribute('y2', endY);
+            line.setAttribute('stroke', 'var(--line-color)');
+            line.setAttribute('stroke-width', 2.5);
+            svg.appendChild(line);
+        };
+
+        // --- Vẽ đường nối thẳng từ Router xuống các Switch ---
+        if (positions.router && positions.switch1) createLine(positions.router.centerX, positions.router.bottomY, positions.switch1.centerX, positions.switch1.topY);
+        if (positions.router && positions.switch2) createLine(positions.router.centerX, positions.router.bottomY, positions.switch2.centerX, positions.switch2.topY);
+        if (positions.router && positions.switch3) createLine(positions.router.centerX, positions.router.bottomY, positions.switch3.centerX, positions.switch3.topY);
+
+        // --- Vẽ đường nối từ Switch xuống PC (Giữ nguyên) ---
+        if (positions.switch1 && positions.pc1a) createLine(positions.switch1.centerX, positions.switch1.bottomY, positions.pc1a.centerX, positions.pc1a.topY);
+        if (positions.switch1 && positions.pc1b) createLine(positions.switch1.centerX, positions.switch1.bottomY, positions.pc1b.centerX, positions.pc1b.topY);
+        if (positions.switch2 && positions.pc2a) createLine(positions.switch2.centerX, positions.switch2.bottomY, positions.pc2a.centerX, positions.pc2a.topY);
+        if (positions.switch3 && positions.pc3a) createLine(positions.switch3.centerX, positions.switch3.bottomY, positions.pc3a.centerX, positions.pc3a.topY);
+    }
+
+    function showPopup(message, type) {
+        popup.textContent = message;
+        popup.className = `popup ${type} show`;
+        setTimeout(() => { popup.classList.remove('show'); }, 3000);
+    }
+
+    function checkConfiguration() {
+        const assignedSubnets = [];
+        const filledPlaceholders = document.querySelectorAll('.subnet-placeholder.filled');
+        filledPlaceholders.forEach(p => {
+            assignedSubnets.push(p.textContent.trim());
+        });
+
+        if (assignedSubnets.length > 0) {
+            const uniqueSubnets = new Set(assignedSubnets);
+            if (uniqueSubnets.size < assignedSubnets.length) {
+                showPopup('Lỗi: Một subnet không được dùng cho nhiều phòng ban!', 'error');
+                return;
+            }
+        }
+
+        let allCorrect = true;
+        let filledCount = 0;
+        let errorShown = false;
+        for (let i = 1; i <= 3; i++) {
+            const gwInput = document.getElementById(`gw-input-${i}`);
+            const placeholder = document.querySelector(`.subnet-placeholder[data-zone="${i}"]`);
+            gwInput.classList.remove('correct', 'wrong');
+            const gwIp = gwInput.value.trim();
+            const subnet = placeholder.textContent.trim();
+            if (gwIp && subnet.includes('/')) {
+                filledCount++;
+                if (isGatewayInSubnet(gwIp, subnet)) {
+                    gwInput.classList.add('correct');
+                } else {
+                    gwInput.classList.add('wrong');
+                    if (!errorShown) {
+                        showPopup(`Lỗi: Gateway ${gwIp} không phải là IP host hợp lệ trong subnet ${subnet}!`, 'error');
+                        errorShown = true;
+                    }
+                    allCorrect = false;
+                }
+            } else if (gwIp || subnet.includes('/')) {
+                allCorrect = false;
+            }
+        }
+
+        if (allCorrect && filledCount === 3) {
+            showPopup('Thành công! Tất cả gateway đều hợp lệ.', 'success');
+        } else if (filledCount < 3 && !errorShown) {
+             showPopup('Vui lòng điền đầy đủ thông tin cho cả 3 phòng ban.', 'error');
+        } else if (!allCorrect && !errorShown) {
+            showPopup('Một hoặc nhiều cấu hình chưa đúng hoặc còn trống.', 'error');
+        }
+    }
+
+    slider.addEventListener('input', updateUI);
+    baseIpInput.addEventListener('change', updateUI);
+    checkBtn.addEventListener('click', checkConfiguration);
+    
+    const resizeObserver = new ResizeObserver(drawLines);
+    resizeObserver.observe(document.getElementById('diagram-area'));
+
+    updateUI();
+    drawLines();
+};
+</script>
+
+</body>
+</html>

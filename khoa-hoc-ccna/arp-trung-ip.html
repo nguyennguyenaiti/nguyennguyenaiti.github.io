@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NẾU ĐẶT TRÙNG IP TRONG LAN</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #4dd0e1;
+            text-shadow: 0 0 15px rgba(77, 208, 225, 0.7);
+            margin-bottom: 1.5rem;
+        }
+
+        .network-map {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            border-radius: 15px;
+            background: rgba(23, 23, 43, 0.7);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #4dd0e1;
+            overflow: hidden;
+        }
+
+        .device {
+            position: absolute;
+            width: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.5s ease-in-out;
+            cursor: pointer;
+        }
+
+        .device .name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .device .ip {
+            font-size: 1rem;
+            color: #2ecc71;
+            font-weight: bold;
+            margin-top: 8px;
+            transition: color 0.5s ease;
+        }
+        .ip-status {
+            font-size: 0.8rem;
+            color: #f1c40f;
+            display: block;
+        }
+
+
+        .pc-body {
+            position: relative;
+            width: 60px;
+            height: 45px;
+            border: 2px solid #4dd0e1;
+            border-radius: 5px;
+            background-color: #2c3e50;
+            box-shadow: 0 0 10px rgba(77, 208, 225, 0.5);
+            transition: all 0.5s ease;
+        }
+
+        .pc-body::after {
+            content: ''; position: absolute; bottom: -7px; left: 50%;
+            transform: translateX(-50%); width: 80px; height: 4px;
+            background-color: #4dd0e1; border-radius: 2px;
+        }
+
+        .pc-body::before {
+            content: ''; position: absolute; bottom: -10px; left: 50%;
+            transform: translateX(-50%); width: 15px; height: 6px;
+            background-color: #34495e; border: 2px solid #4dd0e1; z-index: -1;
+        }
+
+        .switch {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .switch .switch-body {
+            width: 150px;
+            height: 40px;
+            background-color: #34495e;
+            border: 2px solid #5dade2;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(93, 173, 226, 0.5);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 10px;
+        }
+        .switch .switch-port {
+            width: 8px;
+            height: 8px;
+            background-color: #2ecc71;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #2ecc71;
+        }
+
+
+        #pc1 { top: 70px; left: 100px; }
+        #pc2 { top: 350px; left: 100px; }
+        #pc3 { top: 70px; right: 100px; transform: scale(0); opacity: 0;}
+
+        .device-notification {
+            position: absolute;
+            top: 100%;
+            margin-top: 15px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.8);
+            background-color: rgba(241, 196, 15, 0.95);
+            color: #1a1a2e;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            z-index: 30;
+            pointer-events: none;
+        }
+        
+        .device-notification.arp-check {
+            background-color: rgba(155, 89, 182, 0.95);
+            color: #fff;
+        }
+
+        .device-notification.visible {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        .packet {
+            position: absolute; width: 10px; height: 10px;
+            border-radius: 50%; opacity: 0; transform: scale(0);
+            z-index: 10; transition: all 0.2s ease;
+        }
+        .packet.data {
+            background-color: #f1c40f; box-shadow: 0 0 8px #f1c40f;
+        }
+        .packet.arp {
+            background-color: #9b59b6; box-shadow: 0 0 10px #9b59b6;
+            width: 12px; height: 12px;
+        }
+
+
+        .status-box {
+            margin-top: 2rem; padding: 1rem;
+            background: rgba(23, 23, 43, 0.7); border: 1px solid #4dd0e1;
+            border-radius: 8px; min-height: 50px; width: 100%; box-sizing: border-box;
+            transition: all 0.5s ease;
+        }
+
+        #status-text {
+            font-size: 1.2rem; color: #4dd0e1;
+            text-shadow: 0 0 5px rgba(77, 208, 225, 0.5);
+            transition: all 0.5s ease;
+        }
+
+        .button-container { margin-top: 1rem; }
+        button {
+            background-color: #e74c3c; border: none; color: white; padding: 15px 32px;
+            text-align: center; font-size: 16px; margin: 4px 2px; cursor: pointer;
+            border-radius: 8px; transition: all 0.3s ease; box-shadow: 0 5px #c0392b;
+        }
+        button:hover { background-color: #c0392b; }
+        button:active { box-shadow: 0 2px #c0392b; transform: translateY(2px); }
+        button#reset-btn { background-color: #2980b9; box-shadow: 0 5px #2471a3; }
+        button#reset-btn:hover { background-color: #2471a3; }
+        button#reset-btn:active { box-shadow: 0 2px #2471a3; transform: translateY(2px); }
+
+        .conflict-text {
+            position: absolute; top: 20px; left: 50%;
+            transform: translateX(-50%) scale(0);
+            font-size: 2rem; font-weight: bold; color: #e74c3c;
+            text-shadow: 0 0 10px red; transition: transform 0.5s ease;
+            z-index: 20;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>CHUYỆN GÌ XẢY RA NẾU ĐẶT TRÙNG IP</h1>
+        <div class="network-map" id="network-map">
+            <div class="device switch">
+                <div class="name">Switch</div>
+                <div class="switch-body">
+                    <div class="switch-port"></div><div class="switch-port"></div><div class="switch-port"></div>
+                    <div class="switch-port"></div><div class="switch-port"></div><div class="switch-port"></div>
+                </div>
+            </div>
+
+            <div id="pc1" class="device">
+                <div class="name">PC 1</div>
+                <div class="pc-body"></div>
+                <div class="ip">192.168.1.10</div>
+            </div>
+
+            <div id="pc2" class="device">
+                <div class="name">PC 2</div>
+                <div class="pc-body"></div>
+                <div class="ip">192.168.1.11</div>
+            </div>
+
+            <div id="pc3" class="device">
+                <div class="name">PC 3</div>
+                <div class="pc-body"></div>
+                <div class="ip">192.168.1.10 <span class="ip-status"></span></div>
+                <div class="device-notification"></div>
+            </div>
+
+            <div class="conflict-text" id="conflict-text">IP CONFLICT!</div>
+        </div>
+        <div class="status-box">
+            <p id="status-text">Mạng đang hoạt động bình thường. Dữ liệu đang được truyền tải.</p>
+        </div>
+        <div class="button-container">
+            <button id="conflict-btn">Tạo Xung đột IP</button>
+            <button id="reset-btn">Khởi động lại</button>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const networkMap = document.getElementById('network-map');
+        const switchElem = document.querySelector('.switch');
+        const pcs = {
+            pc1: document.getElementById('pc1'),
+            pc2: document.getElementById('pc2'),
+            pc3: document.getElementById('pc3'),
+        };
+        const statusText = document.getElementById('status-text');
+        const conflictBtn = document.getElementById('conflict-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const conflictTextElem = document.getElementById('conflict-text');
+
+        let packetInterval;
+        let isSimulating = false;
+
+        const getCenter = (elem) => {
+            const mapRect = networkMap.getBoundingClientRect();
+            const bodyElem = elem.querySelector('.pc-body, .switch-body') || elem;
+            const bodyRect = bodyElem.getBoundingClientRect();
+            return {
+                x: bodyRect.left - mapRect.left + bodyRect.width / 2,
+                y: bodyRect.top - mapRect.top + bodyRect.height / 2
+            };
+        };
+
+        const animatePacket = (packet, start, end, duration = 1500, keepAlive = false) => {
+            return new Promise(resolve => {
+                const startTime = Date.now();
+                packet.style.left = `${start.x}px`;
+                packet.style.top = `${start.y}px`;
+                packet.style.opacity = '1';
+                packet.style.transform = 'scale(1)';
+
+                function frame() {
+                    const now = Date.now();
+                    const progress = (now - startTime) / duration;
+                    if (progress >= 1) {
+                        packet.style.left = `${end.x}px`;
+                        packet.style.top = `${end.y}px`;
+                        if (!keepAlive) {
+                            setTimeout(() => {
+                                packet.remove();
+                                resolve();
+                            }, 100);
+                        } else {
+                            resolve();
+                        }
+                        return;
+                    }
+                    const currentX = start.x + (end.x - start.x) * progress;
+                    const currentY = start.y + (end.y - start.y) * progress;
+                    packet.style.left = `${currentX}px`;
+                    packet.style.top = `${currentY}px`;
+                    requestAnimationFrame(frame);
+                }
+                requestAnimationFrame(frame);
+            });
+        };
+
+        function startNormalTraffic() {
+            clearInterval(packetInterval);
+            packetInterval = setInterval(() => {
+                if (isSimulating || document.querySelectorAll('.packet').length > 10) return;
+
+                // Luồng từ PC1 -> Switch -> PC2
+                (async () => {
+                    const packet1 = document.createElement('div');
+                    packet1.classList.add('packet', 'data');
+                    networkMap.appendChild(packet1);
+                    await animatePacket(packet1, getCenter(pcs.pc1), getCenter(switchElem), 700, true);
+                    await animatePacket(packet1, getCenter(switchElem), getCenter(pcs.pc2), 700, false);
+                })();
+
+                // Luồng từ PC2 -> Switch -> PC1
+                setTimeout(() => {
+                    if (isSimulating) return;
+                    (async () => {
+                        const packet2 = document.createElement('div');
+                        packet2.classList.add('packet', 'data');
+                        networkMap.appendChild(packet2);
+                        await animatePacket(packet2, getCenter(pcs.pc2), getCenter(switchElem), 700, true);
+                        await animatePacket(packet2, getCenter(switchElem), getCenter(pcs.pc1), 700, false);
+                    })();
+                }, 750);
+
+            }, 2500);
+            statusText.textContent = 'Mạng đang hoạt động bình thường. Dữ liệu đang được truyền tải.';
+        }
+
+        function resetState() {
+            isSimulating = false;
+            conflictBtn.disabled = false;
+            
+            const notification = pcs.pc3.querySelector('.device-notification');
+            notification.classList.remove('visible', 'arp-check');
+            pcs.pc3.style.transform = 'scale(0)';
+            pcs.pc3.style.opacity = '0';
+
+            conflictTextElem.style.transform = 'translateX(-50%) scale(0)';
+            
+            Object.values(pcs).forEach(pc => {
+                const pcBody = pc.querySelector('.pc-body');
+                const ipElem = pc.querySelector('.ip');
+                if (pcBody) {
+                    pcBody.style.borderColor = '#4dd0e1';
+                    pcBody.style.backgroundColor = '#2c3e50';
+                }
+                if (ipElem) {
+                    ipElem.style.color = '#2ecc71';
+                }
+            });
+
+            pcs.pc1.querySelector('.ip').innerHTML = '192.168.1.10';
+            pcs.pc2.querySelector('.ip').innerHTML = '192.168.1.11';
+            pcs.pc3.querySelector('.ip').innerHTML = '192.168.1.10 <span class="ip-status"></span>';
+
+            startNormalTraffic();
+        }
+
+        conflictBtn.addEventListener('click', async () => {
+            if (isSimulating) return;
+            isSimulating = true;
+            conflictBtn.disabled = true;
+            clearInterval(packetInterval);
+            const notification = pcs.pc3.querySelector('.device-notification');
+
+            // Step 1: PC3 appears
+            statusText.textContent = 'PC3 tham gia mạng, yêu cầu IP 192.168.1.10...';
+            pcs.pc3.style.transform = 'scale(1)';
+            pcs.pc3.style.opacity = '1';
+            pcs.pc3.querySelector('.ip-status').textContent = '(Đang kiểm tra...)';
+            await new Promise(r => setTimeout(r, 1000));
+
+            // Step 2: Gratuitous ARP broadcast
+            statusText.innerHTML = '<span style="color: #9b59b6;">PC3 gửi gói tin Gratuitous ARP</span> để kiểm tra IP.';
+            
+            notification.textContent = 'Gửi ARP: "IP này ai dùng chưa?"';
+            notification.classList.add('arp-check', 'visible');
+
+            const arpPacket1 = document.createElement('div');
+            arpPacket1.classList.add('packet', 'arp');
+            networkMap.appendChild(arpPacket1);
+            await animatePacket(arpPacket1, getCenter(pcs.pc3), getCenter(switchElem), 1000, true);
+            
+            // Animate broadcast from switch to other PCs
+            const broadcastPacket1 = document.createElement('div');
+            broadcastPacket1.classList.add('packet', 'arp');
+            networkMap.appendChild(broadcastPacket1);
+            const broadcastPacket2 = document.createElement('div');
+            broadcastPacket2.classList.add('packet', 'arp');
+            networkMap.appendChild(broadcastPacket2);
+            arpPacket1.remove(); // Remove original packet at switch
+
+            animatePacket(broadcastPacket1, getCenter(switchElem), getCenter(pcs.pc1), 1000);
+            animatePacket(broadcastPacket2, getCenter(switchElem), getCenter(pcs.pc2), 1000);
+            await new Promise(r => setTimeout(r, 1000));
+
+
+            notification.classList.remove('visible');
+            await new Promise(r => setTimeout(r, 500));
+            notification.classList.remove('arp-check');
+
+            // Step 3: Conflict detected
+            statusText.innerHTML = '<span style="color: #e74c3c;">PC1 phát hiện xung đột!</span> Gửi lại phản hồi ARP.';
+            const pc1Body = pcs.pc1.querySelector('.pc-body');
+            pc1Body.style.borderColor = '#e74c3c';
+            const arpReplyPacket = document.createElement('div');
+            arpReplyPacket.classList.add('packet', 'arp');
+            networkMap.appendChild(arpReplyPacket);
+            await animatePacket(arpReplyPacket, getCenter(pcs.pc1), getCenter(switchElem), 750, true);
+            await animatePacket(arpReplyPacket, getCenter(switchElem), getCenter(pcs.pc3), 750, false);
+
+
+            // Step 4: Conflict confirmed
+            conflictTextElem.style.transform = 'translateX(-50%) scale(1)';
+            statusText.innerHTML = '<span style="color: #e74c3c; font-weight: bold;">LỖI: Xung đột địa chỉ IP!</span>';
+            const pc3Body = pcs.pc3.querySelector('.pc-body');
+            const pc1Ip = pcs.pc1.querySelector('.ip');
+            const pc3Ip = pcs.pc3.querySelector('.ip');
+            pc1Body.style.backgroundColor = '#6e2c34';
+            pc3Body.style.borderColor = '#e74c3c';
+            pc3Body.style.backgroundColor = '#6e2c34';
+            pc1Ip.style.color = '#ff6b6b';
+            pc3Ip.style.color = '#ff6b6b';
+            await new Promise(r => setTimeout(r, 2500));
+
+            // Step 5: APIPA resolution
+            conflictTextElem.style.transform = 'translateX(-50%) scale(0)';
+            statusText.innerHTML = '<span style="color: #f1c40f;">APIPA được kích hoạt trên PC3.</span> PC1 hoạt động trở lại.';
+            pc3Ip.innerHTML = `169.254.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1} <span class="ip-status">(APIPA)</span>`;
+            pc3Body.style.borderColor = '#f1c40f';
+            pc3Body.style.backgroundColor = '#8a6d19';
+            pc3Ip.style.color = '#f1c40f';
+            pc1Body.style.borderColor = '#4dd0e1';
+            pc1Body.style.backgroundColor = '#2c3e50';
+            pc1Ip.style.color = '#2ecc71';
+
+            notification.textContent = 'Tự chuyển thành 169.254';
+            notification.classList.add('visible');
+
+            await new Promise(r => setTimeout(r, 4000));
+
+            notification.classList.remove('visible');
+            
+            await new Promise(r => setTimeout(r, 500));
+
+            isSimulating = false;
+            startNormalTraffic();
+        });
+
+        resetBtn.addEventListener('click', resetState);
+
+        resetState();
+    });
+    </script>
+</body>
+</html>

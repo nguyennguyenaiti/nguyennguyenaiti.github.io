@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng Unicast, Broadcast, & Multicast (Final)</title>
+<style>
+    :root {
+        --bg-color: #1e1e1e;
+        --card-bg: #2d2d2d;
+        --text-color: #d4d4d4;
+        --border-color: #444;
+        --switch-bg: #004080;
+        --pc-bg: #333;
+        --unicast-color: #00a8ff;
+        --broadcast-color: #ff4d4d;
+        --multicast-color: #c56cf0;
+        --group-color: #feca57;
+        --popup-text-color: #FFC300;
+    }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 30px 20px;
+    }
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+        width: 100%;
+    }
+    .main-container {
+        display: flex;
+        align-items: flex-start;
+        gap: 30px;
+        width: 100%;
+        max-width: 1300px;
+    }
+    .diagram-container {
+        flex: 2;
+        position: relative;
+        height: 550px;
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+    }
+    .device {
+        position: absolute; width: 110px; height: 80px; background-color: var(--pc-bg);
+        border: 2px solid #555; border-radius: 8px; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; font-weight: bold;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: all 0.3s;
+    }
+    .device .icon { font-size: 30px; }
+    #server { top: 30px; left: 50%; transform: translateX(-50%); border-color: var(--unicast-color); }
+    #pc-a { top: 50%; left: 30px; transform: translateY(-50%); }
+    #pc-b { bottom: 30px; left: 25%; transform: translateX(-50%); }
+    #pc-c { bottom: 30px; right: 25%; transform: translateX(50%); }
+    #pc-d { top: 50%; right: 30px; transform: translateY(-50%); }
+
+    #switch {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 120px; height: 120px; background-color: var(--switch-bg);
+        border-radius: 50%; color: white; font-size: 20px;
+    }
+    .multicast-group { border-color: var(--group-color); border-width: 3px; }
+    .svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+    .packet {
+        position: absolute; width: 25px; height: 25px; border-radius: 50%; z-index: 10;
+        display: flex; justify-content: center; align-items: center;
+        color: black; font-weight: bold; transition: all 1.5s ease-in-out;
+        box-shadow: 0 0 15px 3px white;
+    }
+
+    /* SỬA: Chỉnh lại hiệu ứng popup */
+    #ip-popup {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.75);
+        color: var(--popup-text-color);
+        text-shadow: 0 0 8px var(--popup-text-color);
+        padding: 8px 15px;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: bold;
+        z-index: 20;
+        opacity: 0;
+        visibility: hidden;
+        /* Chỉ transition opacity, không transition transform */
+        transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        /* Giữ lại transform để căn giữa nhưng không tạo animation */
+        transform: translateX(-50%);
+    }
+    #ip-popup.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .info-panel { flex: 1; }
+    .controls, .log-container {
+        background-color: var(--card-bg); padding: 20px; border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2); margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+    }
+    h3 { margin-top: 0; color: var(--text-color); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+    .button {
+        display: block; width: 100%; padding: 12px; font-size: 16px; font-weight: bold;
+        border: none; border-radius: 8px; color: white; cursor: pointer;
+        margin-bottom: 10px; transition: filter 0.2s;
+    }
+    .button:hover:not(:disabled) { filter: brightness(1.2); }
+    .button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #log {
+        height: 200px; background-color: #111; color: #ccc;
+        font-family: 'Courier New', Courier, monospace; padding: 10px;
+        border-radius: 6px; overflow-y: auto;
+    }
+    
+    .explanation-card {
+        width: 100%; max-width: 1300px; background-color: var(--card-bg);
+        border: 1px solid var(--border-color); border-radius: 12px;
+        padding: 20px 30px; box-sizing: border-box; text-align: left;
+    }
+    .explanation-card p {
+        line-height: 1.6;
+        color: #b0b0b0;
+    }
+    .explanation-card strong {
+        color: var(--text-color);
+    }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="main-container">
+        <div class="diagram-container" id="diagram">
+            <svg class="svg-canvas" id="svg-canvas"></svg>
+            <div id="ip-popup"></div>
+
+            <div class="device" id="switch">Switch</div>
+            <div class="device" id="server"><div class="icon">🗄️</div>Server</div>
+            <div class="device" id="pc-a"><div class="icon">💻</div>PC A</div>
+            <div class="device multicast-group" id="pc-b"><div class="icon">💻</div>PC B</div>
+            <div class="device multicast-group" id="pc-c"><div class="icon">💻</div>PC C</div>
+            <div class="device" id="pc-d"><div class="icon">💻</div>PC D</div>
+        </div>
+        <div class="info-panel">
+            <div class="controls">
+                <h3>Điều khiển mô phỏng</h3>
+                <button class="button" id="start-btn" style="background-color: #27ae60;">Bắt đầu mô phỏng</button>
+            </div>
+            <div class="log-container">
+                <h3>Nhật ký hoạt động</h3>
+                <div id="log"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="explanation-card">
+        <h3>Giải thích các loại hình truyền tin</h3>
+        <p><strong>Unicast (1-to-1):</strong> Là hình thức truyền tin từ một điểm đến một điểm duy nhất khác. Switch sẽ tìm địa chỉ MAC đích trong bảng của nó và chỉ chuyển gói tin ra đúng cổng có chứa MAC đó. Đây là hình thức giao tiếp phổ biến nhất.</p>
+        <p><strong>Broadcast (1-to-All):</strong> Là hình thức truyền tin từ một điểm đến **tất cả** các điểm khác trong cùng một miền quảng bá (broadcast domain). Switch sẽ "lụt" (flood) gói tin ra tất cả các cổng, trừ cổng mà nó nhận vào.</p>
+        <p><strong>Multicast (1-to-Many):</strong> Là hình thức truyền tin từ một điểm đến **một nhóm** các điểm đã đăng ký lắng nghe. Switch thông minh (có hỗ trợ IGMP Snooping) sẽ chỉ chuyển gói tin đến các cổng có thiết bị thuộc nhóm multicast đó.</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const diagram = document.getElementById('diagram');
+    const svgCanvas = document.getElementById('svg-canvas');
+    const logEl = document.getElementById('log');
+    const startBtn = document.getElementById('start-btn');
+    const ipPopup = document.getElementById('ip-popup');
+
+    const devices = {};
+    ['server', 'pc-a', 'pc-b', 'pc-c', 'pc-d', 'switch'].forEach(id => devices[id] = document.getElementById(id));
+    
+    const getElementCenter = (el) => {
+        const rect = el.getBoundingClientRect();
+        const diagramRect = diagram.getBoundingClientRect();
+        return {
+            x: rect.left - diagramRect.left + rect.width / 2,
+            y: rect.top - diagramRect.top + rect.height / 2
+        };
+    };
+
+    function drawLines() {
+        svgCanvas.innerHTML = '';
+        const switchPos = getElementCenter(devices.switch);
+        ['server', 'pc-a', 'pc-b', 'pc-c', 'pc-d'].forEach(id => {
+            const pcPos = getElementCenter(devices[id]);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', pcPos.x);
+            line.setAttribute('y1', pcPos.y);
+            line.setAttribute('x2', switchPos.x);
+            line.setAttribute('y2', switchPos.y);
+            line.setAttribute('stroke', '#555');
+            line.setAttribute('stroke-width', '3');
+            svgCanvas.appendChild(line);
+        });
+    }
+
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const log = (message, color) => {
+        const p = document.createElement('p');
+        p.style.margin = '0 0 5px 0';
+        p.style.color = color;
+        p.style.fontWeight = 'bold';
+        p.textContent = `> ${message}`;
+        logEl.appendChild(p);
+        logEl.scrollTop = logEl.scrollHeight;
+    };
+    
+    function showIpPopup(text, targetElement) {
+        const targetPos = getElementCenter(targetElement);
+        ipPopup.textContent = text;
+        ipPopup.style.left = `${targetPos.x}px`;
+        ipPopup.style.top = `${targetPos.y - (targetElement.offsetHeight / 2) - 30}px`;
+        ipPopup.classList.add('show');
+    }
+    function hideIpPopup() {
+        ipPopup.classList.remove('show');
+    }
+
+    async function sendPacket(type) {
+        const sourcePos = getElementCenter(devices['server']);
+        const switchPos = getElementCenter(devices.switch);
+        
+        const mainPacket = document.createElement('div');
+        mainPacket.className = 'packet';
+        mainPacket.style.left = `${sourcePos.x - 12.5}px`;
+        mainPacket.style.top = `${sourcePos.y - 12.5}px`;
+        
+        let destIds = [];
+        let logColor;
+        let popupText = '';
+        let popupTarget = devices.switch;
+
+        switch(type) {
+            case 'unicast':
+                mainPacket.style.backgroundColor = 'var(--unicast-color)'; mainPacket.textContent = 'U';
+                destIds.push('pc-d'); logColor = 'var(--unicast-color)';
+                log('1. Gửi Unicast (đến PC D):', logColor);
+                popupText = 'IP Đích: 192.168.1.10'; popupTarget = devices['pc-d'];
+                break;
+            case 'broadcast':
+                mainPacket.style.backgroundColor = 'var(--broadcast-color)'; mainPacket.textContent = 'B';
+                destIds = ['pc-a', 'pc-b', 'pc-c', 'pc-d']; logColor = 'var(--broadcast-color)';
+                log('2. Gửi Broadcast (đến tất cả):', logColor);
+                popupText = 'IP Đích: 255.255.255.255';
+                break;
+            case 'multicast':
+                mainPacket.style.backgroundColor = 'var(--multicast-color)'; mainPacket.textContent = 'M';
+                destIds = ['pc-b', 'pc-c']; logColor = 'var(--multicast-color)';
+                log('3. Gửi Multicast (đến nhóm vàng):', logColor);
+                popupText = 'Group IP: 224.0.1.10';
+                break;
+        }
+        
+        diagram.appendChild(mainPacket);
+
+        await sleep(50);
+        mainPacket.style.left = `${switchPos.x - 12.5}px`;
+        mainPacket.style.top = `${switchPos.y - 12.5}px`;
+        await sleep(1500);
+
+        log('Switch nhận và xử lý frame...');
+        diagram.removeChild(mainPacket);
+        
+        showIpPopup(popupText, popupTarget);
+        await sleep(2500); // Đợi 3 giây
+
+        const childPackets = [];
+        destIds.forEach(id => {
+            const p = document.createElement('div');
+            p.className = 'packet';
+            p.style.backgroundColor = mainPacket.style.backgroundColor;
+            p.textContent = mainPacket.textContent;
+            p.style.left = `${switchPos.x - 12.5}px`;
+            p.style.top = `${switchPos.y - 12.5}px`;
+            diagram.appendChild(p);
+            childPackets.push(p);
+        });
+
+        await sleep(100);
+        
+        childPackets.forEach((p, index) => {
+            const destPos = getElementCenter(devices[destIds[index]]);
+            p.style.left = `${destPos.x - 12.5}px`;
+            p.style.top = `${destPos.y - 12.5}px`;
+        });
+        
+        await sleep(1500);
+        childPackets.forEach(p => diagram.removeChild(p));
+        hideIpPopup();
+        log('→ Hoàn thành!', '#2ecc71');
+    }
+
+    async function runFullSimulation() {
+        startBtn.disabled = true;
+        logEl.innerHTML = '';
+        await sendPacket('unicast');
+        await sleep(2000);
+        await sendPacket('broadcast');
+        await sleep(2000);
+        await sendPacket('multicast');
+        startBtn.disabled = false;
+    }
+    
+    startBtn.addEventListener('click', runFullSimulation);
+
+    drawLines();
+    window.addEventListener('resize', drawLines);
+});
+</script>
+
+</body>
+</html>

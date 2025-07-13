@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bầu chọn STP Root Bridge- Hãy tự chọn pri và MAC</title>
+	
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        h1 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #00ff7f; /* Spring Green */
+        }
+
+        /* --- Simulation Area --- */
+        .simulation-container {
+            position: relative;
+            width: 700px;
+            height: 500px;
+            background-color: #2b2b2b;
+            border: 2px solid #444;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,255,127,0.1);
+            margin-bottom: 20px;
+        }
+        .simulation-container.paused .bpdu {
+            animation-play-state: paused !important;
+        }
+
+        /* --- Switch --- */
+        .switch {
+            position: absolute;
+            width: 180px;
+            background-color: #3c3f41;
+            border: 3px solid #888;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            transition: all 0.5s ease;
+            color: #f0f0f0;
+            z-index: 10;
+        }
+        .switch h3 { margin: 0 0 10px 0; font-size: 16px; color: #00ff7f; }
+        .switch select, .switch input {
+            width: 90%; padding: 5px; margin-bottom: 5px;
+            border: 1px solid #666; border-radius: 4px;
+            background-color: #2b2b2b; color: #e0e0e0;
+        }
+        .switch-status {
+            font-style: italic; color: #ccc; font-size: 12px;
+            height: 15px; margin-top: 5px;
+            font-weight: bold;
+        }
+        #sw1 { top: 20px; left: 250px; }
+        #sw2 { top: 350px; left: 50px; }
+        #sw3 { top: 350px; left: 450px; }
+        .switch.root {
+            border-color: #ffc107; background-color: #4a422a;
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.7);
+        }
+        .switch.root::after {
+            content: '👑'; position: absolute; top: -15px; left: 50%;
+            transform: translateX(-50%); font-size: 24px;
+        }
+
+        /* --- Thought Bubble --- */
+        .thought-bubble {
+            position: absolute;
+            top: 0px;
+            width: 170px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #ffc107;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 8px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s, visibility 0.4s;
+            pointer-events: none;
+            line-height: 1.4;
+        }
+        .thought-bubble.pos-right {
+            left: 105%;
+        }
+        .thought-bubble.pos-right::after {
+            content: ''; position: absolute; top: 20px; left: -8px;
+            border-style: solid; border-width: 8px 8px 8px 0;
+            border-color: transparent rgba(0, 0, 0, 0.85) transparent transparent;
+        }
+        .thought-bubble.pos-left {
+            right: 105%;
+        }
+        .thought-bubble.pos-left::after {
+            content: ''; position: absolute; top: 20px; right: -8px;
+            border-style: solid; border-width: 8px 0 8px 8px;
+            border-color: transparent transparent transparent rgba(0, 0, 0, 0.85);
+        }
+        .thought-bubble.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* --- Controls & Packets --- */
+        .controls {
+            position: absolute; top: 220px; left: 50%;
+            transform: translateX(-50%); display: flex; gap: 10px; z-index: 15;
+        }
+        .controls button {
+            padding: 12px 25px; font-size: 16px; font-weight: bold;
+            cursor: pointer; border: none; border-radius: 5px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .bpdu {
+            position: absolute;
+            width: 12px; height: 12px;
+            background-color: #ff8c00;
+            border-radius: 50%;
+            z-index: 12;
+            box-shadow: 0 0 8px #ff8c00;
+            transition: left 1.5s ease-in-out, top 1.5s ease-in-out;
+        }
+
+        /* --- Markers & Logs --- */
+        .blocked-port {
+            position: absolute; font-size: 30px; color: #dc3545; font-weight: bold;
+            z-index: 15; transform: translate(-50%, -50%); opacity: 0;
+            transition: opacity 1s ease; text-shadow: 0 0 5px #000;
+        }
+        .blocked-port.show { opacity: 1; }
+        .log-panel {
+            width: 80%; max-width: 700px; height: 150px;
+            background-color: #0d0d0d; color: #00ff00;
+            font-family: 'Courier New', Courier, monospace; font-size: 14px;
+            padding: 15px; border-radius: 5px; overflow-y: auto;
+            border: 1px solid #00ff00; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        .log-panel p { margin: 0 0 5px 0; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <h1><br>Bầu chọn STP Root Bridge</br>Hãy tự chọn pri và MAC để thử</h1>
+
+    <div class="simulation-container" id="simulation-area">
+        <div class="switch" id="sw1">
+            <h3>Switch 1</h3>
+            <div class="thought-bubble" id="bubble1"></div>
+            <select id="prio1">
+                <option value="32768">32768</option><option value="28672">28672</option><option value="24576">24576</option><option value="4096">4096</option>
+            </select>
+            <input type="text" id="mac1" value="00:00:00:00:00:11">
+            <div class="switch-status" id="status1"></div>
+        </div>
+        <div class="switch" id="sw2">
+            <h3>Switch 2</h3>
+            <div class="thought-bubble" id="bubble2"></div>
+            <select id="prio2">
+                <option value="32768">32768</option><option value="28672">28672</option><option value="24576">24576</option><option value="4096">4096</option>
+            </select>
+            <input type="text" id="mac2" value="00:00:00:00:00:22">
+            <div class="switch-status" id="status2"></div>
+        </div>
+        <div class="switch" id="sw3">
+            <h3>Switch 3</h3>
+            <div class="thought-bubble" id="bubble3"></div>
+            <select id="prio3">
+                <option value="32768">32768</option><option value="28672">28672</option><option value="24576">24576</option><option value="4096">4096</option>
+            </select>
+            <input type="text" id="mac3" value="00:00:00:00:00:33">
+            <div class="switch-status" id="status3"></div>
+        </div>
+        <div class="controls">
+            <button id="run-button">Bắt đầu</button>
+            <button id="pause-button">Pause</button>
+        </div>
+    </div>
+
+    <div class="log-panel" id="log-panel">
+        <p>Chọn Priority và MAC, sau đó nhấn "Bắt đầu".</p>
+    </div>
+
+    <script>
+        const runButton = document.getElementById('run-button');
+        const pauseButton = document.getElementById('pause-button');
+        const logPanel = document.getElementById('log-panel');
+        const simArea = document.getElementById('simulation-area');
+
+        let isPaused = false;
+        const switches = [
+            { id: 1, el: document.getElementById('sw1'), prioEl: document.getElementById('prio1'), macEl: document.getElementById('mac1'), statusEl: document.getElementById('status1'), bubbleEl: document.getElementById('bubble1') },
+            { id: 2, el: document.getElementById('sw2'), prioEl: document.getElementById('prio2'), macEl: document.getElementById('mac2'), statusEl: document.getElementById('status2'), bubbleEl: document.getElementById('bubble2') },
+            { id: 3, el: document.getElementById('sw3'), prioEl: document.getElementById('prio3'), macEl: document.getElementById('mac3'), statusEl: document.getElementById('status3'), bubbleEl: document.getElementById('bubble3') }
+        ];
+        let state = [];
+
+        function getSwitchCenter(sw) {
+            return { x: sw.el.offsetLeft + sw.el.offsetWidth / 2, y: sw.el.offsetTop + sw.el.offsetHeight / 2 };
+        }
+
+        async function pausableSleep(duration) {
+            let elapsed = 0; const checkInterval = 50;
+            while(elapsed < duration) {
+                if(isPaused) {
+                    await new Promise(resolve => {
+                        const resumeHandler = () => { pauseButton.removeEventListener('click', resumeHandler); resolve(); };
+                        pauseButton.addEventListener('click', resumeHandler);
+                    });
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, checkInterval));
+                    elapsed += checkInterval;
+                }
+            }
+        }
+
+        function log(message) {
+            logPanel.innerHTML += `<p>> ${message}</p>`;
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        function resetSimulation() {
+            logPanel.innerHTML = '<p>Chọn Priority và MAC, sau đó nhấn "Bắt đầu".</p>';
+            runButton.disabled = true;
+            pauseButton.textContent = 'Pause'; isPaused = false;
+            simArea.classList.remove('paused');
+            document.querySelectorAll('.bpdu, .blocked-port, .wire-svg').forEach(el => el.remove());
+            
+            switches.forEach(sw => {
+                sw.el.classList.remove('root');
+                sw.statusEl.textContent = '';
+                sw.statusEl.style.color = '';
+                sw.bubbleEl.classList.remove('show', 'pos-left', 'pos-right');
+                if (sw.el.offsetLeft > simArea.offsetWidth / 2) {
+                    sw.bubbleEl.classList.add('pos-left');
+                } else {
+                    sw.bubbleEl.classList.add('pos-right');
+                }
+            });
+
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute('style', "position:absolute; top:0; left:0; width:100%; height:100%; z-index:1;");
+            svg.classList.add('wire-svg');
+            [[1, 2], [2, 3], [3, 1]].forEach(([id1, id2]) => {
+                const pos1 = getSwitchCenter(switches.find(s => s.id === id1));
+                const pos2 = getSwitchCenter(switches.find(s => s.id === id2));
+                const line = document.createElementNS(svgNS, "line");
+                line.setAttribute('x1', pos1.x); line.setAttribute('y1', pos1.y);
+                line.setAttribute('x2', pos2.x); line.setAttribute('y2', pos2.y);
+                line.setAttribute('style', "stroke:#6c757d; stroke-width:4");
+                svg.appendChild(line);
+            });
+            simArea.prepend(svg);
+
+            state = switches.map(sw => ({ id: sw.id, bridgeId: `${sw.prioEl.value}.${sw.macEl.value}`, rootId: `${sw.prioEl.value}.${sw.macEl.value}`}));
+        }
+
+        async function showThoughtBubble(switchId, message) {
+            const bubbleEl = switches.find(s => s.id === switchId).bubbleEl;
+            bubbleEl.innerHTML = message;
+            bubbleEl.classList.add('show');
+            await pausableSleep(2500);
+            bubbleEl.classList.remove('show');
+        }
+
+        async function sendBpdu(fromSwitch, toSwitch, senderState) {
+            const bpduEl = document.createElement('div');
+            bpduEl.className = 'bpdu';
+            const startPos = getSwitchCenter(fromSwitch);
+            const endPos = getSwitchCenter(toSwitch);
+            bpduEl.style.left = `${startPos.x - 6}px`;
+            bpduEl.style.top = `${startPos.y - 6}px`;
+            bpduEl.title = `BPDU from SW${fromSwitch.id}\nRoot ID: ${senderState.rootId}`;
+            simArea.appendChild(bpduEl);
+
+            await pausableSleep(50);
+            bpduEl.style.left = `${endPos.x - 6}px`;
+            bpduEl.style.top = `${endPos.y - 6}px`;
+            await pausableSleep(1500);
+            bpduEl.remove();
+            return { rootId: senderState.rootId };
+        }
+
+        function compareBids(bid1, bid2) {
+            const [prio1, mac1] = bid1.split('.'); const [prio2, mac2] = bid2.split('.');
+            if (parseInt(prio1) < parseInt(prio2)) return -1;
+            if (parseInt(prio1) > parseInt(prio2)) return 1;
+            return mac1.localeCompare(mac2);
+        }
+
+        async function runSimulation() {
+            resetSimulation();
+            log('--- Bắt đầu quá trình bầu chọn STP ---');
+            switches.forEach(sw => {
+                sw.statusEl.textContent = 'Tự coi mình là Root';
+                sw.statusEl.style.color = '#ffc107';
+            });
+            await pausableSleep(1000);
+
+            log('\n--- Bắt đầu vòng lặp hội tụ ---');
+            const roundStartState = JSON.parse(JSON.stringify(state));
+
+            for (const senderState of roundStartState) {
+                const senderSwitch = switches.find(s => s.id === senderState.id);
+                if (senderState.id > 1) {
+                    log(`...Đợi 2 giây...`);
+                    await pausableSleep(2000);
+                }
+                log(`\n-- Lượt gửi của SW${senderSwitch.id} --`);
+                await pausableSleep(500);
+
+                for (const receiverState of roundStartState) {
+                    if (senderState.id === receiverState.id) continue;
+                    const receiverSwitch = switches.find(s => s.id === receiverState.id);
+                    const bpdu = await sendBpdu(senderSwitch, receiverSwitch, senderState);
+                    const currentReceiverState = state.find(s => s.id === receiverState.id);
+                    log(`SW${receiverState.id} nhận BPDU từ SW${senderState.id}`);
+                    
+                    let thoughtMessage = '';
+                    if (compareBids(bpdu.rootId, currentReceiverState.rootId) < 0) {
+                        thoughtMessage = `BPDU từ SW${senderState.id} tốt hơn.<br>Sẽ cập nhật!`;
+                        log(`   => BPDU tốt hơn! SW${receiverState.id} cập nhật Root ID.`);
+                        currentReceiverState.rootId = bpdu.rootId;
+                        receiverSwitch.statusEl.textContent = `Root là SW${bpdu.rootId.split('.').pop().slice(-1)}`;
+                        receiverSwitch.statusEl.style.color = '#ffc107';
+                    } else {
+                        const knownRootId = currentReceiverState.rootId;
+                        const knownRootSwitchNum = knownRootId.split('.').pop().slice(-1);
+                        thoughtMessage = `Chưa tốt bằng Root ID hiện có (của SW${knownRootSwitchNum}).<br>Bỏ qua.`;
+                        log(`   => BPDU không tốt hơn. Bỏ qua.`);
+                    }
+                    await showThoughtBubble(receiverState.id, thoughtMessage);
+                }
+            }
+            
+            log('\n--- Mạng đã hội tụ! ---');
+            const finalRootId = state.sort((a, b) => compareBids(a.rootId, b.rootId))[0].rootId;
+            const rootBridge = state.find(s => s.bridgeId === finalRootId);
+            log(`Root Bridge được xác định là: SW${rootBridge.id} (ID: ${rootBridge.bridgeId})`);
+
+            const rootBridgeEl = switches.find(s => s.id === rootBridge.id).el;
+            rootBridgeEl.classList.add('root');
+            const rootStatusEl = rootBridgeEl.querySelector('.switch-status');
+            rootStatusEl.textContent = 'I AM THE ROOT BRIDGE!';
+            rootStatusEl.style.color = '#00ff7f';
+
+            const nonRootSwitches = state.filter(s => s.id !== rootBridge.id);
+            if (nonRootSwitches.length === 2) {
+                const [nr1, nr2] = nonRootSwitches;
+                const portBlockerState = compareBids(nr1.bridgeId, nr2.bridgeId) > 0 ? nr1 : nr2;
+                const otherSwitchState = (nr1.id === portBlockerState.id) ? nr2 : nr1;
+                log(`Khóa cổng giữa SW${nr1.id} và SW${nr2.id} trên SW${portBlockerState.id} để chống lặp.`);
+                const blockerSwitch = switches.find(s => s.id === portBlockerState.id);
+                const otherSwitch = switches.find(s => s.id === otherSwitchState.id);
+                const blockerCenter = getSwitchCenter(blockerSwitch);
+                const otherCenter = getSwitchCenter(otherSwitch);
+                const markerX = blockerCenter.x + 0.20 * (otherCenter.x - blockerCenter.x);
+                const markerY = blockerCenter.y + 0.20 * (otherCenter.y - blockerCenter.y);
+
+                const blockedPortMarker = document.createElement('div');
+                blockedPortMarker.className = 'blocked-port';
+                blockedPortMarker.textContent = 'X';
+                blockedPortMarker.style.left = `${markerX}px`;
+                blockedPortMarker.style.top = `${markerY}px`;
+                simArea.appendChild(blockedPortMarker);
+                setTimeout(() => blockedPortMarker.classList.add('show'), 100);
+            }
+
+            runButton.disabled = false;
+        }
+
+        runButton.addEventListener('click', runSimulation);
+        pauseButton.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+            simArea.classList.toggle('paused', isPaused);
+            if (isPaused) { log("\n--- Mô phỏng đã Tạm dừng ---"); }
+        });
+        window.onload = () => { runButton.disabled = false; };
+    </script>
+</body>
+</html>

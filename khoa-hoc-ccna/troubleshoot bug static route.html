@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng: Sửa lỗi Static Route Bị Mất Chiều Về</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Poppins:wght@400;600&display=swap');
+
+        :root {
+            --bg-color: #f0f2f5;
+            --router-bg: #ffffff;
+            --router-border: #b0bec5;
+            --line-color: #78909c;
+            --console-bg: #1e272e;
+            --console-text: #6ab04c;
+            --success-color: #2ecc71;
+            --fail-color: #e74c3c;
+            --ping-color: #3498db;
+            --reply-color: #2ecc71;
+            --font-main: 'Poppins', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .simulation-container {
+            width: 100%;
+            max-width: 1100px;
+            text-align: center;
+        }
+
+        .diagram-container {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .ip-annotation {
+            position: absolute;
+            top: 0;
+            background-color: rgba(236, 240, 241, 0.9);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            /* Thay đổi màu chữ và độ đậm */
+            color: #1c2e36;
+            font-weight: 600;
+            z-index: 3;
+            border: 1px dashed var(--router-border);
+        }
+
+        #anno-a {
+            left: 5%;
+        }
+
+        #anno-d {
+            right: 5%;
+        }
+
+
+        .router {
+            position: relative;
+            width: 100px;
+            height: 80px;
+            background-color: var(--router-bg);
+            border: 2px solid var(--router-border);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+        
+        .status-light {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            animation: blink 1.5s infinite ease-in-out;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        @keyframes fast-blink {
+             0%, 100% { transform: scale(1); background-color: #f1c40f; }
+             50% { transform: scale(1.5); background-color: #f39c12; }
+        }
+
+        .debug-arrow {
+            position: absolute;
+            bottom: 5px;
+            right: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            color: #34495e;
+            transition: transform 0.2s;
+        }
+        .debug-arrow:hover {
+            transform: scale(1.2);
+        }
+
+        .svg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #packet {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            color: white;
+            z-index: 10;
+            transition: all 1.5s ease-in-out;
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        #fail-x {
+            position: absolute;
+            font-size: 50px;
+            color: var(--fail-color);
+            z-index: 11;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.5s ease-out;
+            font-weight: bold;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            font-family: var(--font-main);
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        #ping-btn {
+            background-color: #3498db;
+            color: white;
+            box-shadow: 0 4px 0 #2980b9;
+        }
+        #ping-btn:disabled {
+             background-color: #95a5a6;
+             box-shadow: 0 4px 0 #7f8c8d;
+             cursor: not-allowed;
+        }
+        #ping-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #2980b9;
+        }
+        #ping-btn:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #2980b9;
+        }
+
+        #reset-btn {
+            background-color: #f39c12;
+            color: white;
+            margin-left: 15px;
+        }
+        
+        #console-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 650px;
+            background-color: var(--console-bg);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            z-index: 100;
+            color: white;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease-in-out;
+            font-family: var(--font-mono);
+        }
+        #console-window.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        #console-output {
+            background-color: black;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            color: #e0e0e0;
+            margin-bottom: 15px;
+        }
+        #console-output .highlight {
+            background-color: #ffff8d;
+            color: black;
+        }
+
+        #console-input-area {
+            display: none;
+            align-items: center;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        #console-input-area.visible {
+            display: flex;
+        }
+
+        #console-prompt {
+            white-space: nowrap;
+        }
+
+        #console-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--console-text);
+            font-family: var(--font-mono);
+            font-size: 16px;
+            padding-left: 5px;
+            flex-grow: 1;
+        }
+        #console-input:focus {
+            outline: none;
+        }
+
+        #submit-cmd-btn {
+            padding: 8px 15px;
+            font-size: 14px;
+            background-color: var(--console-text);
+            color: var(--console-bg);
+            font-family: var(--font-main);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+
+        #console-input.shake {
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            10%, 90% { transform: translateX(-1px); }
+            20%, 80% { transform: translateX(2px); }
+            30%, 50%, 70% { transform: translateX(-4px); }
+            40%, 60% { transform: translateX(4px); }
+        }
+
+        #message-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        #message-popup.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .message-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: all 0.3s;
+        }
+        #message-popup.visible .message-box {
+            transform: scale(1);
+        }
+
+        #message-box-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .pyro { display: none; }
+        .pyro > .before, .pyro > .after {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            box-shadow: -120px -218.2px #00f, 14px -218.2px #00f, 29px -218.2px #00f, -40px -218.2px #00f, -103px -218.2px #00f, 120px -218.2px #00f, -102px -218.2px #00f, -50px -218.2px #00f, -94px -218.2px #00f, 95px -218.2px #00f, 2px -218.2px #00f, 82px -218.2px #00f;
+            animation: 1s bang ease-out infinite backwards, 1s gravity ease-in infinite backwards, 5s position linear infinite backwards;
+        }
+        .pyro > .after {
+            animation-delay: 1.25s, 1.25s, 1.25s;
+            animation-duration: 1.25s, 1.25s, 6.25s;
+        }
+        @keyframes bang { from { box-shadow: 0 0 white, 0 0 white, 0 0 white, 0 0 white, 0 0 white, 0 0 white, 0 0 white, 0 0 white, 0 0 white, 0 0 white, 0 0 white, 0 0 white; } }
+        @keyframes gravity { to { transform: translateY(200px); opacity: 0; } }
+        @keyframes position { 0%, 19.9% { margin-top: 10%; margin-left: 40%; } 20%, 39.9% { margin-top: 40%; margin-left: 30%; } 40%, 59.9% { margin-top: 20%; margin-left: 70%; } 60%, 79.9% { margin-top: 30%; margin-left: 20%; } 80%, 99.9% { margin-top: 30%; margin-left: 80%; } }
+
+    </style>
+</head>
+<body>
+
+<div class="simulation-container">
+    <h1>Mô phỏng: Sửa lỗi Static Route</h1>
+    <p>Ping từ Loopback A (1.1.1.1/32) đến Loopback D (4.4.4.4/32). Một router đang bị thiếu cấu hình.</p>
+    
+    <div class="diagram-container" id="diagram">
+        <svg class="svg-canvas" id="svg-canvas"></svg>
+        
+        <div class="ip-annotation" id="anno-a">Lo0: 1.1.1.1/32</div>
+        <div class="ip-annotation" id="anno-d">Lo0: 4.4.4.4/32</div>
+
+        <div class="router" id="router-a">
+            <span class="status-light"></span>
+            <p>Router A</p>
+            <span class="debug-arrow" data-router="a">›</span>
+        </div>
+        <div class="router" id="router-b">
+            <span class="status-light"></span>
+            <p>Router B</p>
+            <span class="debug-arrow" data-router="b">›</span>
+        </div>
+        <div class="router" id="router-c">
+            <span class="status-light"></span>
+            <p>Router C</p>
+            <span class="debug-arrow" data-router="c">›</span>
+        </div>
+        <div class="router" id="router-d">
+             <span class="status-light"></span>
+             <p>Router D</p>
+             <span class="debug-arrow" data-router="d">›</span>
+        </div>
+
+        <div id="packet"></div>
+        <div id="fail-x">X</div>
+    </div>
+
+    <div class="controls">
+        <button id="ping-btn">Thử Ping từ A đến D</button>
+        <button id="reset-btn">Làm lại</button>
+    </div>
+</div>
+
+<div id="console-window">
+    <h3 id="console-title"></h3>
+    <pre id="console-output"></pre>
+    <div id="console-input-area">
+        <label for="console-input" id="console-prompt">Router C(config)#</label>
+        <input type="text" id="console-input" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Gõ lệnh định tuyến tại đây...">
+        <button id="submit-cmd-btn">Submit</button>
+    </div>
+</div>
+
+<div id="message-popup">
+    <div class="message-box">
+         <div class="pyro">
+            <div class="before"></div>
+            <div class="after"></div>
+        </div>
+        <h2 id="message-box-title"></h2>
+        <p id="message-box-text"></p>
+        <button id="message-box-close">Đóng</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // === DOM Elements ===
+    const diagram = document.getElementById('diagram');
+    const svgCanvas = document.getElementById('svg-canvas');
+    const pingBtn = document.getElementById('ping-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const packet = document.getElementById('packet');
+    const failX = document.getElementById('fail-x');
+    const consoleWindow = document.getElementById('console-window');
+    const consoleTitle = document.getElementById('console-title');
+    const consoleOutput = document.getElementById('console-output');
+    const consoleInputArea = document.getElementById('console-input-area');
+    const consoleInput = document.getElementById('console-input');
+    const submitCmdBtn = document.getElementById('submit-cmd-btn');
+    const messagePopup = document.getElementById('message-popup');
+    const messageBoxTitle = document.getElementById('message-box-title');
+    const messageBoxText = document.getElementById('message-box-text');
+    const messageBoxClose = document.getElementById('message-box-close');
+    const pyro = document.querySelector('.pyro');
+
+    const routers = {
+        a: document.getElementById('router-a'),
+        b: document.getElementById('router-b'),
+        c: document.getElementById('router-c'),
+        d: document.getElementById('router-d'),
+    };
+
+    // === State Management ===
+    let isBugFixed = false;
+    let isSimulating = false;
+
+    // === Routing Tables Data ===
+    const routeTables = {
+        a: `RouterA#show ip route
+S* 0.0.0.0/0 [1/0] via 10.1.1.2
+C    1.1.1.1/32 is directly connected, Loopback0
+C    10.1.1.0/24 is directly connected, GigabitEthernet0/0`,
+        b: `RouterB#show ip route
+S    1.1.1.1/32 [1/0] via 10.1.1.1
+C    10.1.1.0/24 is directly connected, GigabitEthernet0/0
+C    10.1.2.0/24 is directly connected, GigabitEthernet0/1
+S    4.4.4.4/32 [1/0] via 10.1.2.2`,
+        c: {
+            unfixed: `RouterC#show ip route
+C    10.1.2.0/24 is directly connected, GigabitEthernet0/0
+C    10.1.3.0/24 is directly connected, GigabitEthernet0/1
+S    4.4.4.4/32 [1/0] via 10.1.3.2`,
+            fixed: `RouterC#show ip route
+<span class="highlight">S    1.1.1.1/32 [1/0] via 10.1.2.1</span>
+C    10.1.2.0/24 is directly connected, GigabitEthernet0/0
+C    10.1.3.0/24 is directly connected, GigabitEthernet0/1
+S    4.4.4.4/32 [1/0] via 10.1.3.2`
+        },
+        d: `RouterD#show ip route
+S* 0.0.0.0/0 [1/0] via 10.1.3.1
+C    4.4.4.4/32 is directly connected, Loopback0
+C    10.1.3.0/24 is directly connected, GigabitEthernet0/0`
+    };
+    const correctCommand = "ip route 1.1.1.1 255.255.255.255 10.1.2.1";
+
+    // === Utility Functions ===
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    const getElementCenter = (el) => {
+        const rect = el.getBoundingClientRect();
+        const diagramRect = diagram.getBoundingClientRect();
+        return {
+            x: rect.left - diagramRect.left + rect.width / 2,
+            y: rect.top - diagramRect.top + rect.height / 2
+        };
+    };
+
+    function drawLines() {
+        svgCanvas.innerHTML = '';
+        const routerIds = Object.keys(routers);
+        for (let i = 0; i < routerIds.length - 1; i++) {
+            const startRouter = routers[routerIds[i]];
+            const endRouter = routers[routerIds[i + 1]];
+            const startPos = getElementCenter(startRouter);
+            const endPos = getElementCenter(endRouter);
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', startPos.x);
+            line.setAttribute('y1', startPos.y);
+            line.setAttribute('x2', endPos.x);
+            line.setAttribute('y2', endPos.y);
+            line.setAttribute('stroke', 'var(--line-color)');
+            line.setAttribute('stroke-width', '5');
+            svgCanvas.appendChild(line);
+        }
+    }
+
+    function showMessage(title, text, type = 'fail') {
+        messageBoxTitle.textContent = title;
+        messageBoxText.textContent = text;
+        if (type === 'success') {
+            messageBoxTitle.style.color = 'var(--success-color)';
+            pyro.style.display = 'block';
+        } else {
+            messageBoxTitle.style.color = 'var(--fail-color)';
+            pyro.style.display = 'none';
+        }
+        messagePopup.classList.add('visible');
+    }
+    
+    function animateLight(routerId){
+        const light = routers[routerId].querySelector('.status-light');
+        light.style.animation = 'fast-blink 0.5s 3';
+        setTimeout(() => {
+            light.style.animation = 'blink 1.5s infinite ease-in-out';
+        }, 1500);
+    }
+
+    // === Simulation Logic ===
+    async function movePacket(from, to, type = 'ping') {
+        const startPos = getElementCenter(routers[from]);
+        const endPos = getElementCenter(routers[to]);
+        
+        if (type === 'ping') {
+            packet.style.backgroundColor = 'var(--ping-color)';
+            packet.textContent = 'Q';
+        } else {
+            packet.style.backgroundColor = 'var(--reply-color)';
+            packet.textContent = 'A';
+        }
+
+        packet.style.transition = 'none';
+        packet.style.left = `${startPos.x - 15}px`;
+        packet.style.top = `${startPos.y - 15}px`;
+        packet.style.opacity = 1;
+        packet.style.transform = 'scale(1)';
+
+        await sleep(50);
+        packet.style.transition = 'all 1.5s ease-in-out';
+        packet.style.left = `${endPos.x - 15}px`;
+        packet.style.top = `${endPos.y - 15}px`;
+        animateLight(to);
+        await sleep(1500);
+    }
+
+    async function runFailedPing() {
+        await movePacket('a', 'b', 'ping');
+        await movePacket('b', 'c', 'ping');
+        
+        const cPos = getElementCenter(routers.c);
+        failX.style.left = `${cPos.x - 25}px`;
+        failX.style.top = `${cPos.y - 25}px`;
+        failX.style.opacity = 1;
+        failX.style.transform = 'scale(1)';
+        packet.style.transform = 'scale(0)';
+        packet.style.opacity = 0;
+        
+        await sleep(1000);
+        showMessage('Thất bại!', 'Gói tin đã bị loại bỏ tại Router C. Hãy kiểm tra cấu hình để tìm lỗi.', 'fail');
+    }
+
+    async function runSuccessfulPing() {
+        await movePacket('a', 'b', 'ping');
+        await movePacket('b', 'c', 'ping');
+        await movePacket('c', 'd', 'ping');
+        
+        await sleep(500);
+        
+        await movePacket('d', 'c', 'reply');
+        await movePacket('c', 'b', 'reply');
+        await movePacket('b', 'a', 'reply');
+
+        packet.style.opacity = 0;
+        packet.style.transform = 'scale(0)';
+
+        await sleep(500);
+        showMessage('THÀNH CÔNG!', 'Kết nối đã được thiết lập hai chiều.', 'success');
+    }
+
+    function startPingSimulation() {
+        if (isSimulating) return;
+        
+        isSimulating = true;
+        pingBtn.disabled = true;
+        pingBtn.textContent = "Đang ping...";
+        
+        packet.style.opacity = 0;
+        failX.style.opacity = 0;
+
+        const simulation = isBugFixed ? runSuccessfulPing() : runFailedPing();
+        simulation.finally(() => {
+            isSimulating = false;
+            pingBtn.disabled = false;
+            pingBtn.textContent = "Thử Ping từ A đến D";
+        });
+    }
+    
+    // === Console Logic (UPDATED) ===
+    function handleOutsideClick(event) {
+        // Nếu click vào bên trong console hoặc vào mũi tên debug thì không làm gì cả
+        if (event.target.closest('#console-window') || event.target.closest('.debug-arrow')) {
+            return;
+        }
+        // Nếu click ra ngoài, đóng console
+        closeConsole();
+    }
+
+    function showConsole(routerId) {
+        consoleTitle.textContent = `Bảng định tuyến - Router ${routerId.toUpperCase()}`;
+        consoleInputArea.classList.remove('visible');
+        
+        let output;
+        if (routerId === 'c') {
+            output = isBugFixed ? routeTables.c.fixed : routeTables.c.unfixed;
+            if (!isBugFixed) {
+                consoleInputArea.classList.add('visible');
+            }
+        } else {
+            output = routeTables[routerId];
+        }
+        
+        consoleOutput.innerHTML = output;
+        consoleWindow.classList.add('visible');
+        
+        // Bắt đầu lắng nghe click bên ngoài KHI console được mở
+        document.addEventListener('click', handleOutsideClick);
+    }
+
+    function closeConsole() {
+        if (consoleWindow.classList.contains('visible')) {
+            consoleWindow.classList.remove('visible');
+            // Dừng lắng nghe click bên ngoài KHI console đã đóng
+            document.removeEventListener('click', handleOutsideClick);
+        }
+    }
+    
+    function submitCommand() {
+        const command = consoleInput.value.trim().replace(/\s+/g, ' ');
+        if (command.toLowerCase() === correctCommand.toLowerCase()) {
+            isBugFixed = true;
+            consoleInput.value = "";
+            showMessage('Đã chấp nhận lệnh!', 'Bảng định tuyến của Router C đã được cập nhật. Hãy thử nghiệm lại.', 'success');
+            setTimeout(closeConsole, 500);
+        } else {
+            consoleInput.classList.add('shake');
+            setTimeout(() => consoleInput.classList.remove('shake'), 500);
+        }
+    }
+    
+    // === Reset Logic ===
+    function resetSimulation() {
+        isBugFixed = false;
+        isSimulating = false;
+        
+        pingBtn.disabled = false;
+        pingBtn.textContent = "Thử Ping từ A đến D";
+        
+        packet.style.opacity = 0;
+        packet.style.transform = 'scale(0)';
+        failX.style.opacity = 0;
+        failX.style.transform = 'scale(0)';
+        
+        closeConsole();
+        messagePopup.classList.remove('visible');
+        
+        console.log("Mô phỏng đã được reset. Lỗi định tuyến đã được khôi phục.");
+    }
+
+    // === Event Listeners ===
+    pingBtn.addEventListener('click', startPingSimulation);
+    resetBtn.addEventListener('click', resetSimulation);
+    
+    document.querySelectorAll('.debug-arrow').forEach(arrow => {
+        arrow.addEventListener('click', (e) => {
+            const routerId = e.currentTarget.dataset.router;
+            // Nếu console khác đang mở, đóng nó trước
+            if (consoleWindow.classList.contains('visible')) {
+                closeConsole();
+            }
+            showConsole(routerId);
+        });
+    });
+
+    submitCmdBtn.addEventListener('click', submitCommand);
+    consoleInput.addEventListener('keydown', (event) => {
+        if(event.key === 'Enter') {
+            submitCommand();
+        }
+    });
+
+    messagePopup.addEventListener('click', (e) => {
+        if (e.target === messagePopup || e.target === messageBoxClose) {
+            messagePopup.classList.remove('visible');
+        }
+    });
+
+    // === Initial Setup ===
+    drawLines();
+    window.addEventListener('resize', drawLines);
+});
+</script>
+
+</body>
+</html>
