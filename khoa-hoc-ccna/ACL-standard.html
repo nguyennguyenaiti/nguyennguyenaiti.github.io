@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng: Người Gác Cổng Standard ACL</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
+
+        :root {
+            --bg-color: #f0f4f8; 
+            --text-color: #333;
+            --device-bg: #ffffff;
+            --device-border: #bdc3c7;
+            --line-color: #95a5a6;
+            --console-bg: #1a1a1a;
+            --console-border: #00ffcc;
+            --console-text: #00ff7f;
+            --chat-bg: rgba(44, 62, 80, 0.9);
+            --chat-text: #f1c40f;
+            --success-color: #2ecc71;
+            --fail-color: #e74c3c;
+            --packet-a-color: #3498db;
+            --packet-b-color: #f1c40f;
+            --font-main: 'Poppins', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .simulation-container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        #diagram {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background-color: rgba(0,0,0,0.05);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 1px solid #dcdcdc;
+        }
+
+        .device {
+            position: absolute;
+            width: 100px;
+            height: 70px;
+            background-color: var(--device-bg);
+            border: 2px solid var(--device-border);
+            border-radius: 8px;
+            color: #333;
+            font-weight: 600;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 5;
+        }
+        .device .ip-addr { font-size: 11px; font-family: var(--font-mono); color: #555;}
+        
+        #router-a { top: 50px; left: 50px; }
+        #router-b { top: 250px; left: 50px; }
+        #router-c { top: 150px; left: 50%; transform: translateX(-50%); }
+        #server-d { top: 150px; right: 50px; font-size: 40px; background: none; border: none; box-shadow: none;}
+        
+        .led {
+            position: absolute;
+            top: 5px;
+            width: 8px;
+            height: 8px;
+            background-color: #7f8c8d;
+            border-radius: 50%;
+            animation: blink 2s infinite ease-in-out;
+        }
+        .led.left { left: 8px; }
+        .led.right { left: 20px; animation-delay: 0.5s; }
+        @keyframes blink {
+            0%, 100% { background-color: var(--success-color); }
+            50% { background-color: #7f8c8d; }
+        }
+
+        .svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .line { stroke: var(--line-color); stroke-width: 4; fill: none; }
+
+        #packet {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            z-index: 10;
+            border: 2px solid white;
+            opacity: 0;
+            offset-anchor: center;
+        }
+        
+        @keyframes move-along-path {
+            from { offset-distance: 0%; }
+            to { offset-distance: 100%; }
+        }
+        .is-moving {
+            animation: move-along-path 1.5s ease-in-out forwards;
+        }
+
+        #result-icon {
+            position: absolute;
+            font-size: 50px;
+            font-weight: bold;
+            z-index: 11;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s ease-out;
+        }
+
+        #chat-bubble-c {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--chat-bg);
+            color: var(--chat-text);
+            padding: 10px 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s;
+            z-index: 102;
+        }
+        
+        #console-window {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            background-color: var(--console-bg);
+            border: 2px solid var(--console-border);
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s;
+        }
+        #console-window pre {
+            font-family: var(--font-mono);
+            color: var(--console-text);
+            white-space: pre-wrap;
+            margin: 0;
+            min-height: 150px;
+        }
+        #console-window .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background: var(--console-text);
+            animation: cursor-blink 1s infinite;
+        }
+        @keyframes cursor-blink { 50% { opacity: 0; } }
+        
+        .popup {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--fail-color);
+            padding: 10px 20px;
+            border-radius: 8px;
+            z-index: 101;
+            opacity: 0;
+            transition: all 0.5s;
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .button {
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+        #config-btn { background-color: #3498db; color: white; }
+        .test-btn { background-color: var(--success-color); color: white; }
+        .button:disabled { background-color: #7f8c8d; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div class="simulation-container">
+    <h1>Mô phỏng: Người Gác Cổng Standard ACL</h1>
+    <div id="diagram">
+        <svg class="svg-canvas" id="svg-canvas"></svg>
+        <div class="device" id="router-a">Router A <div class="ip-addr">192.168.10.1</div> <span class="led left"></span><span class="led right"></span></div>
+        <div class="device" id="router-b">Router B <div class="ip-addr">192.168.20.1</div> <span class="led left"></span><span class="led right"></span></div>
+        <div class="device" id="router-c">Router C <span class="led left"></span><span class="led right"></span></div>
+        <div class="device" id="server-d">🖥️ <div class="ip-addr">10.10.10.10</div></div>
+
+        <div id="packet"></div>
+        <div id="result-icon"></div>
+        <div id="chat-bubble-c"></div>
+    </div>
+    <div class="controls">
+        <button id="config-btn" class="button">1. Cấu hình ACL</button>
+        <button id="test-a-btn" class="button test-btn" disabled>2. TEST A → D</button>
+        <button id="test-b-btn" class="button test-btn" disabled>3. TEST B → D</button>
+        <button id="reset-btn" class="button" style="background-color: #e67e22; color: white;">Làm lại</button>
+    </div>
+</div>
+
+<div id="console-window">
+    <pre id="console-code"></pre>
+    <button id="console-close-btn" class="button" style="background-color: #f39c12; display:none; margin-top:15px;">Đã hiểu</button>
+</div>
+<div id="deny-popup" class="popup"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Elements ---
+    const diagram = document.getElementById('diagram');
+    const svgCanvas = document.getElementById('svg-canvas');
+    const packet = document.getElementById('packet');
+    const resultIcon = document.getElementById('result-icon');
+    const configBtn = document.getElementById('config-btn');
+    const testABtn = document.getElementById('test-a-btn');
+    const testBBtn = document.getElementById('test-b-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const chatBubble = document.getElementById('chat-bubble-c');
+    const consoleWindow = document.getElementById('console-window');
+    const consoleCode = document.getElementById('console-code');
+    const consoleCloseBtn = document.getElementById('console-close-btn');
+    const denyPopup = document.getElementById('deny-popup');
+
+    const devices = {
+        a: document.getElementById('router-a'),
+        b: document.getElementById('router-b'),
+        c: document.getElementById('router-c'),
+        d: document.getElementById('server-d'),
+    };
+
+    // --- State ---
+    let isConfigured = false;
+    let isAnimating = false;
+
+    // --- Helpers ---
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    const getElementCenter = el => {
+        const rect = el.getBoundingClientRect();
+        const diagramRect = diagram.getBoundingClientRect();
+        return {
+            x: rect.left - diagramRect.left + rect.width / 2,
+            y: rect.top - diagramRect.top + rect.height / 2
+        };
+    };
+
+    function drawPaths() {
+        svgCanvas.innerHTML = '';
+        const pos = {
+            a: getElementCenter(devices.a),
+            b: getElementCenter(devices.b),
+            c: getElementCenter(devices.c),
+            d: getElementCenter(devices.d)
+        };
+        const createPath = (id, start, end) => {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('id', id);
+            path.setAttribute('class', 'line');
+            path.setAttribute('d', `M ${start.x} ${start.y} L ${end.x} ${end.y}`);
+            svgCanvas.appendChild(path);
+        };
+        createPath('path-ac', pos.a, pos.c);
+        createPath('path-bc', pos.b, pos.c);
+        createPath('path-cd', pos.c, pos.d);
+    }
+
+    async function typeText(element, lines) {
+        element.innerHTML = '';
+        const cursor = `<span class="cursor"></span>`;
+        for (const line of lines) {
+            let currentLine = '';
+            for (const char of line.text) {
+                currentLine += char;
+                element.innerHTML = element.innerHTML.replace(cursor, '') + currentLine.slice(-1) + cursor;
+                await sleep(40);
+            }
+            element.innerHTML = element.innerHTML.replace(cursor, '') + '\n';
+            if(line.comment) {
+                element.innerHTML += `<span style="color: #7f8c8d;">${line.comment}</span>\n`;
+            }
+        }
+         element.innerHTML = element.innerHTML.replace(cursor, '');
+    }
+
+    async function movePacket(startId, endId) {
+        const pathId = `path-${startId}${endId}`;
+        const pathElement = document.getElementById(pathId);
+        if (!pathElement) return;
+
+        packet.style.offsetPath = `path('${pathElement.getAttribute("d")}')`;
+        packet.classList.add('is-moving');
+        
+        return new Promise(resolve => {
+            const animationEndHandler = () => {
+                packet.classList.remove('is-moving');
+                packet.removeEventListener('animationend', animationEndHandler);
+                resolve();
+            };
+            packet.addEventListener('animationend', animationEndHandler);
+        });
+    }
+    
+    // --- Main Functions ---
+    async function configureAcl() {
+        if (isConfigured || isAnimating) return;
+        configBtn.disabled = true;
+
+        chatBubble.textContent = "Nhiệm vụ: Chặn B (192.168.20.1), cho phép A (192.168.10.1).";
+        chatBubble.style.opacity = 1;
+        chatBubble.style.visibility = 'visible';
+        await sleep(4000);
+        chatBubble.style.opacity = 0;
+        chatBubble.style.visibility = 'hidden';
+
+        consoleWindow.style.opacity = 1;
+        consoleWindow.style.visibility = 'visible';
+        
+        const commands = [
+            { text: 'RouterC(config)# access-list 10 permit 192.168.10.0 0.0.0.255', comment: '# Cho phép toàn bộ mạng của A' },
+            { text: '', comment: '# (Lệnh deny any ẩn sẽ từ chối mạng của B)' },
+            { text: 'RouterC(config)# interface g0/3' },
+            { text: 'RouterC(config-if)# ip access-group 10 out', comment: '# Áp dụng ACL cho traffic đi ra' }
+        ];
+        await typeText(consoleCode, commands);
+        consoleCloseBtn.style.display = 'inline-block';
+    }
+
+    consoleCloseBtn.addEventListener('click', () => {
+        consoleWindow.style.opacity = 0;
+        consoleWindow.style.visibility = 'hidden';
+        isConfigured = true;
+        testABtn.disabled = false;
+        testBBtn.disabled = false;
+        configBtn.textContent = 'Đã cấu hình ACL';
+    });
+    
+    async function testFlow(source, isAllowed) {
+        if (!isConfigured || isAnimating) return;
+        isAnimating = true;
+
+        packet.style.backgroundColor = isAllowed ? 'var(--packet-a-color)' : 'var(--packet-b-color)';
+        packet.style.opacity = 1;
+        
+        await movePacket(source, 'c');
+        
+        const cPos = getElementCenter(devices.c);
+        resultIcon.style.left = `${cPos.x - 25}px`;
+        resultIcon.style.top = `${cPos.y - 25}px`;
+        
+        if (isAllowed) {
+            resultIcon.textContent = '✔';
+            resultIcon.style.color = 'var(--success-color)';
+            resultIcon.style.opacity = 1;
+            resultIcon.style.transform = 'scale(1)';
+            await sleep(1000);
+            packet.style.opacity = 1; 
+            await movePacket('c', 'd');
+        } else {
+            resultIcon.textContent = '✖';
+            resultIcon.style.color = 'var(--fail-color)';
+            resultIcon.style.opacity = 1;
+            resultIcon.style.transform = 'scale(1.2)';
+            packet.style.transition = 'all 0.5s';
+            packet.style.opacity = 0;
+            packet.style.transform = 'scale(0)';
+            await sleep(500);
+            denyPopup.textContent = `Traffic từ ${source.toUpperCase()} đã bị chặn bởi ACL 10.`;
+            denyPopup.style.opacity = 1;
+            await sleep(3000);
+            denyPopup.style.opacity = 0;
+        }
+
+        packet.style.opacity = 0;
+        resultIcon.style.opacity = 0;
+        isAnimating = false;
+    }
+    
+    function resetSimulation() {
+        if (isAnimating) return;
+        isConfigured = false;
+
+        configBtn.disabled = false;
+        configBtn.textContent = '1. Cấu hình ACL';
+        testABtn.disabled = true;
+        testBBtn.disabled = true;
+
+        packet.style.opacity = 0;
+        resultIcon.style.opacity = 0;
+        denyPopup.style.opacity = 0;
+
+        consoleWindow.style.opacity = 0;
+        consoleWindow.style.visibility = 'hidden';
+        consoleCloseBtn.style.display = 'none';
+        consoleCode.innerHTML = '';
+        
+        chatBubble.style.opacity = 0;
+        chatBubble.style.visibility = 'hidden';
+    }
+
+    // --- Event Listeners ---
+    configBtn.addEventListener('click', configureAcl);
+    testABtn.addEventListener('click', () => testFlow('a', true));
+    testBBtn.addEventListener('click', () => testFlow('b', false));
+    resetBtn.addEventListener('click', resetSimulation);
+    
+    // --- Initial Load ---
+    drawPaths();
+    window.addEventListener('resize', drawPaths);
+    
+    // Bỏ tự động chạy, để người dùng chủ động bắt đầu
+    // configureAcl(); 
+});
+</script>
+
+</body>
+</html>
