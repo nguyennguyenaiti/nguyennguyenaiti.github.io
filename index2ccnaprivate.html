@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mục lục Khóa học CCNA Tương tác</title>
+    <style>
+        /* CSS được lấy từ file dhcp relay.html của bạn */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f7f6;
+            display: flex;
+        }
+
+        .lab-sidebar {
+            width: 260px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .lab-sidebar h2 {
+            text-align: center;
+            color: #1abc9c;
+            padding-bottom: 20px;
+            margin: 0 0 20px 0;
+            border-bottom: 1px solid #34495e;
+            font-size: 1.5em;
+        }
+
+        .lab-sidebar ul {
+            list-style: none;
+            padding: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .lab-sidebar li a {
+            display: block;
+            padding: 15px 30px;
+            color: #ecf0f1;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.2s, padding-left 0.2s;
+        }
+
+        .lab-sidebar li a:hover,
+        .lab-sidebar li a.active {
+            background-color: #34495e;
+            padding-left: 35px;
+        }
+
+        .main-lab-content {
+            margin-left: 260px;
+            padding: 2rem;
+            width: calc(100% - 260px - 4rem);
+        }
+
+        .main-lab-content h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #1abc9c;
+            padding-bottom: 10px;
+        }
+
+        .main-lab-content p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #34495e;
+        }
+
+        .lab-link-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 2rem;
+        }
+
+        .lab-link-list li {
+            margin-bottom: 1rem;
+        }
+
+        .lab-link-list li a {
+            display: block;
+            padding: 1rem;
+            background: #ffffff;
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .lab-link-list li a:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            color: #1abc9c;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .lab-sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                margin-bottom: 20px;
+            }
+
+            .main-lab-content {
+                margin-left: 0;
+                width: calc(100% - 4rem);
+            }
+
+            body {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lab-sidebar">
+        <h2>CCNA LABS</h2>
+        <ul>
+            <li><a href="#" class="active">Mục lục khóa học</a></li>
+            </ul>
+    </div>
+
+    <div class="main-lab-content">
+        <h1>Mục lục Khóa học CCNA Tương tác</h1>
+        <p>
+            Chào mừng bạn đến với danh sách các bài thực hành mô phỏng cho khóa học CCNA.
+            Hãy chọn một bài lab bên dưới để bắt đầu học tập và thực hành một cách trực quan nhất!
+        </p>
+
+        <ul class="lab-link-list">
+            <li><a href="/khoa-hoc-ccna/7-layer-OSL.html">Mô phỏng Mô hình 7 lớp OSI</a></li>
+            <li><a href="/khoa-hoc-ccna/ACL-standard.html">Cấu hình ACL Standard</a></li>
+            <li><a href="/khoa-hoc-ccna/arp-trung-ip.html">Mô phỏng ARP và Trùng IP</a></li>
+            <li><a href="/khoa-hoc-ccna/bai-tap-subnet.html">Bài tập thực hành chia Subnet</a></li>
+            <li><a href="/khoa-hoc-ccna/bat-tay-ospf-de-hieu.html">Mô phỏng quá trình bắt tay OSPF</a></li>
+            <li><a href="/khoa-hoc-ccna/bau-chon-STP.html">Mô phỏng quá trình bầu chọn của STP</a></li>
+            <li><a href="/khoa-hoc-ccna/broadcast-unicast-multicast.html">Phân biệt Broadcast, Unicast, Multicast</a></li>
+            <li><a href="/khoa-hoc-ccna/cach-switch-learn-mac.html">Cách một Switch học địa chỉ MAC</a></li>
+            <li><a href="/khoa-hoc-ccna/inter-vlan-routing.html">Cấu hình Inter-VLAN Routing</a></li>
+            <li><a href="/khoa-hoc-ccna/lab-dhcp-relay.html">Lab thực hành DHCP Relay</a></li>
+            <li><a href="/khoa-hoc-ccna/mo-phong-vtp.html">Mô phỏng VLAN Trunking Protocol (VTP)</a></li>
+            <li><a href="/khoa-hoc-ccna/phan-tich-ip.html">Công cụ Phân tích địa chỉ IP</a></li>
+            <li><a href="/khoa-hoc-ccna/route-select.html">Quá trình một Router lựa chọn đường đi</a></li>
+            <li><a href="/khoa-hoc-ccna/troubleshoot-bug-static-route.html">Troubleshoot lỗi cấu hình sai Static Route</a></li>
+        </ul>
+    </div>
+
+</body>
+</html>
